@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from sklearn.ensemble import RandomForestRegressor
 
 st.set_page_config(
@@ -366,8 +367,9 @@ if uploaded_file:
             unsafe_allow_html=True
         )
         st.caption(
-            "This is a one-step-ahead forecast using each category's most recent known values. "
-            "It predicts a genuinely future period not present in the uploaded data."
+            "This chart predicts how much each product category will sell next month, "
+            "based on recent sales trends. Taller bars mean higher expected demand. "
+            "It is a genuine forecast for a period not present in the uploaded data."
         )
 
         display_future = future_rows[['Category', 'order_year', 'order_month', 'Predicted Next Month Sales']].copy()
@@ -385,6 +387,9 @@ if uploaded_file:
         fig5, ax5 = plt.subplots(figsize=(9, 4))
         fig5.patch.set_facecolor('white')
         ax5.bar(display_future['Category'], display_future['Predicted Next Month Sales'], color="#3b82f6")
+        ax5.set_title("Predicted Sales for Next Month, by Category", fontsize=13, fontweight='bold', pad=15)
+        ax5.set_ylabel("Predicted Sales", fontsize=10)
+        ax5.yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, _: f'{x:,.0f}'))
         ax5.spines['top'].set_visible(False)
         ax5.spines['right'].set_visible(False)
         ax5.set_xticklabels(display_future['Category'], rotation=30, ha='right')
