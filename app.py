@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -134,11 +133,12 @@ st.markdown("""
 
 st.markdown("""
     <div class="hero">
-        <div class="hero-badge">MACHINE LEARNING · RANDOM FOREST</div>
-        <div class="hero-title">Retail Demand Forecasting & Inventory Planning</div>
+        <div class="hero-badge">MACHINE LEARNING &middot; RANDOM FOREST</div>
+        <div class="hero-title">Retail Demand Forecasting &amp; Inventory Planning</div>
         <div class="hero-sub">Category-wise sales prediction using historical transaction patterns, lag features, and seasonal trend analysis</div>
     </div>
 """, unsafe_allow_html=True)
+
 
 def metric_card(label, value, sub=""):
     st.markdown(f"""
@@ -148,6 +148,7 @@ def metric_card(label, value, sub=""):
             <div class="metric-sub">{sub}</div>
         </div>
     """, unsafe_allow_html=True)
+
 
 uploaded_file = st.file_uploader("Upload retail transaction data (CSV)", type="csv")
 
@@ -192,22 +193,70 @@ if uploaded_file:
     rmse = np.sqrt(np.mean((y_test - pred_sales) ** 2))
     mape = np.mean(np.abs((y_test - pred_sales) / y_test)) * 100
 
+    # ==========================
+    # FUTURE FORECAST (next month per category)
+    # ==========================
+    category_cols = [c for c in monthly_encoded.columns if c.startswith('Category of Goods_')]
+
+    latest_rows = (
+        monthly_encoded
+        .sort_values(['order_year', 'order_month'])
+        .groupby(category_cols, dropna=False)
+        .tail(1)
+        .copy()
+    )
+
+    future_rows = latest_rows.copy()
+    future_rows['order_year'] = latest_rows.apply(
+        lambda r: r['order_year'] + 1 if r['order_month'] == 12 else r['order_year'], axis=1
+    )
+    future_rows['order_month'] = latest_rows['order_month'] % 12 + 1
+
+    future_rows['sales_lag_3'] = latest_rows['sales_lag_2']
+    future_rows['sales_lag_2'] = latest_rows['sales_lag_1']
+    future_rows['sales_lag_1'] = latest_rows['Sales']
+    future_rows['rolling_mean_3'] = latest_rows[['Sales', 'sales_lag_1', 'sales_lag_2']].mean(axis=1)
+
+    future_pred = rf.predict(future_rows[features])
+    future_rows['Predicted Next Month Sales'] = future_pred
+
+    def label_category(row):
+        for c in category_cols:
+            if row[c]:
+                return c.replace('Category of Goods_', '')
+        return 'Dairy Products'
+
+    future_rows['Category'] = future_rows.apply(label_category, axis=1)
+
     # Top strip of key metrics, always visible
     k1, k2, k3, k4 = st.columns(4)
-    with k1: metric_card("Dataset Size", f"{df.shape[0]:,}", "transactions")
-    with k2: metric_card("Categories", df['Category of Goods'].nunique(), "product categories")
-    with k3: metric_card("Forecast Accuracy", f"{mape:.2f}%", "MAPE (lower is better)")
-    with k4: metric_card("Model", "Random Forest", "200 estimators")
+    with k1:
+        metric_card("Dataset Size", f"{df.shape[0]:,}", "transactions")
+    with k2:
+        metric_card("Categories", df['Category of Goods'].nunique(), "product categories")
+    with k3:
+        metric_card("Forecast Accuracy", f"{mape:.2f}%", "MAPE (lower is better)")
+    with k4:
+        metric_card("Model", "Random Forest", "200 estimators")
 
     st.write("")
-    tab1, tab2, tab3, tab4 = st.tabs(["Forecast Performance", "Inventory Planning", "Demand Spikes", "Business Insights"])
+    tab1, tab2, tab3, tab4, tab5 = st.tabs(
+        ["Forecast Performance", "Inventory Planning", "Demand Spikes", "Business Insights", "Next Month Forecast"]
+    )
 
     with tab1:
-        st.markdown('<div class="section-title">Model Accuracy</div><div class="section-sub">Evaluated on out-of-time test data (most recent year held out)</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-title">Model Accuracy</div>'
+            '<div class="section-sub">Evaluated on out-of-time test data (most recent year held out)</div>',
+            unsafe_allow_html=True
+        )
         c1, c2, c3 = st.columns(3)
-        with c1: metric_card("Mean Absolute Error", f"{mae:,.0f}")
-        with c2: metric_card("RMSE", f"{rmse:,.0f}")
-        with c3: metric_card("MAPE", f"{mape:.2f}%")
+        with c1:
+            metric_card("Mean Absolute Error", f"{mae:,.0f}")
+        with c2:
+            metric_card("RMSE", f"{rmse:,.0f}")
+        with c3:
+            metric_card("MAPE", f"{mape:.2f}%")
 
         st.markdown('<div class="section-title">Actual vs Predicted Sales</div>', unsafe_allow_html=True)
         fig, ax = plt.subplots(figsize=(10, 4))
@@ -223,7 +272,11 @@ if uploaded_file:
         ax.legend(frameon=False, fontsize=10)
         st.pyplot(fig)
 
-        st.markdown('<div class="section-title">Feature Importance</div><div class="section-sub">Which signals the model relies on most</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-title">Feature Importance</div>'
+            '<div class="section-sub">Which signals the model relies on most</div>',
+            unsafe_allow_html=True
+        )
         importance_df = pd.DataFrame({'Feature': features, 'Importance': rf.feature_importances_})
         importance_df = importance_df.sort_values('Importance', ascending=False).head(8)
         fig2, ax2 = plt.subplots(figsize=(8, 4.5))
@@ -239,7 +292,11 @@ if uploaded_file:
         st.pyplot(fig2)
 
     with tab2:
-        st.markdown('<div class="section-title">Recommended Inventory</div><div class="section-sub">Forecasted sales plus 15% safety stock buffer</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-title">Recommended Inventory</div>'
+            '<div class="section-sub">Forecasted sales plus 15% safety stock buffer</div>',
+            unsafe_allow_html=True
+        )
         results = test[['order_year', 'order_month']].copy()
         results['Predicted Sales'] = pred_sales
         results['Safety Stock'] = results['Predicted Sales'] * 0.15
@@ -254,12 +311,18 @@ if uploaded_file:
         )
 
     with tab3:
-        st.markdown('<div class="section-title">Rule-Based Demand Spike Detection</div><div class="section-sub">Flagged when month-over-month sales growth exceeds 20%</div>', unsafe_allow_html=True)
+        st.markdown(
+            '<div class="section-title">Rule-Based Demand Spike Detection</div>'
+            '<div class="section-sub">Flagged when month-over-month sales growth exceeds 20%</div>',
+            unsafe_allow_html=True
+        )
         spikes = monthly[monthly['demand_spike'] == 1]
 
         c1, c2 = st.columns(2)
-        with c1: metric_card("Total Spike Events", len(spikes), f"out of {len(monthly)} observations")
-        with c2: metric_card("Spike Rate", f"{len(spikes)/len(monthly)*100:.1f}%", "of all months")
+        with c1:
+            metric_card("Total Spike Events", len(spikes), f"out of {len(monthly)} observations")
+        with c2:
+            metric_card("Spike Rate", f"{len(spikes)/len(monthly)*100:.1f}%", "of all months")
 
         st.write("")
         fig3, ax3 = plt.subplots(figsize=(6, 3))
@@ -286,11 +349,46 @@ if uploaded_file:
         top_region = df.groupby('Region')['Sales'].sum().idxmax()
 
         c1, c2 = st.columns(2)
-        with c1: metric_card("Best Performing Month", best_month, "highest average sales")
-        with c2: metric_card("Weakest Month", monthly_avg.idxmin(), "lowest average sales")
+        with c1:
+            metric_card("Best Performing Month", best_month, "highest average sales")
+        with c2:
+            metric_card("Weakest Month", monthly_avg.idxmin(), "lowest average sales")
         c3, c4 = st.columns(2)
-        with c3: metric_card("Top Category", top_category, "by total sales")
-        with c4: metric_card("Top Region", top_region, "by total sales")
+        with c3:
+            metric_card("Top Category", top_category, "by total sales")
+        with c4:
+            metric_card("Top Region", top_region, "by total sales")
+
+    with tab5:
+        st.markdown(
+            '<div class="section-title">Next Month Sales Forecast</div>'
+            '<div class="section-sub">Predicted sales per category for the upcoming month, based on the most recent known trend</div>',
+            unsafe_allow_html=True
+        )
+        st.caption(
+            "This is a one-step-ahead forecast using each category's most recent known values. "
+            "It predicts a genuinely future period not present in the uploaded data."
+        )
+
+        display_future = future_rows[['Category', 'order_year', 'order_month', 'Predicted Next Month Sales']].copy()
+        display_future['Recommended Inventory'] = display_future['Predicted Next Month Sales'] * 1.15
+        display_future = display_future.rename(columns={'order_year': 'Year', 'order_month': 'Month'})
+
+        st.dataframe(
+            display_future.style.format({
+                'Predicted Next Month Sales': '{:,.0f}',
+                'Recommended Inventory': '{:,.0f}'
+            }),
+            use_container_width=True
+        )
+
+        fig5, ax5 = plt.subplots(figsize=(9, 4))
+        fig5.patch.set_facecolor('white')
+        ax5.bar(display_future['Category'], display_future['Predicted Next Month Sales'], color="#3b82f6")
+        ax5.spines['top'].set_visible(False)
+        ax5.spines['right'].set_visible(False)
+        ax5.set_xticklabels(display_future['Category'], rotation=30, ha='right')
+        st.pyplot(fig5)
 
 else:
     st.markdown("""
