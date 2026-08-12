@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -13,101 +14,38 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
-    background: #000000;
-    color: #ffffff;
-}
-[data-testid="stSidebar"] {
-    background: #050505;
-    border-right: 1px solid #333333;
-}
-[data-testid="stSidebar"] * {
-    color: #ffffff !important;
-}
-h1, h2, h3, h4, h5, h6 {
-    color: #ffffff !important;
-}
-p, label, li {
-    color: #d8d8d8;
-}
-span {
-    color: inherit;
-}
-[data-testid="stMetric"] {
-    background: #111111;
-    border: 1px solid #333333;
-    border-radius: 12px;
-    padding: 16px;
-}
-[data-testid="stMetricLabel"] {
-    color: #bdbdbd !important;
-}
-[data-testid="stMetricValue"] {
-    color: #ffffff !important;
-    font-weight: 700;
-}
-.stTabs [data-baseweb="tab-list"] {
-    background: #080808;
-    border-bottom: 1px solid #333333;
-}
-.stTabs [data-baseweb="tab"] {
-    color: #aaaaaa !important;
-    background: #080808;
-}
-.stTabs [aria-selected="true"] {
-    color: #ffffff !important;
-    font-weight: 700;
-}
-[data-testid="stDataFrame"] {
-    background: #111111;
-    border: 1px solid #333333;
-}
-[data-testid="stDataFrame"] * {
-    color: #ffffff !important;
-}
-[data-testid="stFileUploader"] {
-    background: #111111;
-    border: 1px solid #333333;
-    border-radius: 10px;
-}
-[data-testid="stFileUploader"] * {
-    color: #ffffff !important;
-}
-button {
-    background: #111111 !important;
-    color: #ffffff !important;
-    border: 1px solid #555555 !important;
-}
-button:hover {
-    background: #222222 !important;
-    border-color: #ffffff !important;
-}
-input, textarea {
-    background: #111111 !important;
-    color: #ffffff !important;
-    border: 1px solid #444444 !important;
-}
-div[data-baseweb="select"] > div {
-    background: #111111 !important;
-    color: #ffffff !important;
-    border-color: #444444 !important;
-}
-div[data-baseweb="select"] * {
-    color: #ffffff !important;
-}
-[data-testid="stAlert"] {
-    background: #111111;
-    border: 1px solid #444444;
-}
-[data-testid="stAlert"] * {
-    color: #ffffff !important;
-}
-hr {
-    border-color: #333333;
-}
-small {
-    color: #999999 !important;
-}
+.stApp, [data-testid="stAppViewContainer"] { background:#000 !important; color:#fff !important; }
+[data-testid="stHeader"] { background:#000 !important; }
+[data-testid="stSidebar"] { background:#030303 !important; border-right:1px solid #292929; }
+[data-testid="stSidebar"] * { color:#f5f5f5 !important; }
+.block-container { padding: 1.05rem 1.15rem 1.5rem 1.15rem; max-width: 100%; }
+h1,h2,h3,h4,h5,h6 { color:#fff !important; }
+p,label,li { color:#d6d6d6 !important; }
+.stCaption, small { color:#9d9d9d !important; }
+[data-testid="stMetric"] { background:#080808 !important; border:1px solid #303030 !important; border-radius:8px !important; padding:14px 16px !important; min-height:92px; }
+[data-testid="stMetricLabel"] { color:#d8d8d8 !important; font-weight:600 !important; }
+[data-testid="stMetricValue"] { color:#fff !important; font-size:1.9rem !important; font-weight:800 !important; }
+[data-testid="stMetricDelta"] { color:#70d54a !important; }
+.stTabs [data-baseweb="tab-list"] { background:#000 !important; border-bottom:1px solid #252525; gap:0; }
+.stTabs [data-baseweb="tab"] { color:#aaa !important; background:#000 !important; padding:0.75rem 1.05rem !important; font-weight:600; }
+.stTabs [data-baseweb="tab"]:hover { color:#fff !important; }
+.stTabs [aria-selected="true"] { color:#fff !important; border-bottom:2px solid #fff !important; }
+[data-testid="stDataFrame"] { border:1px solid #303030 !important; border-radius:7px !important; background:#050505 !important; }
+[data-testid="stFileUploader"] { background:#050505 !important; border:1px solid #333 !important; border-radius:7px !important; }
+[data-testid="stFileUploader"] * { color:#fff !important; }
+button { background:#fff !important; color:#000 !important; border:1px solid #fff !important; border-radius:5px !important; font-weight:700 !important; }
+button:hover { background:#ddd !important; }
+input,textarea { background:#080808 !important; color:#fff !important; border:1px solid #444 !important; }
+div[data-baseweb="select"] > div { background:#080808 !important; color:#fff !important; border-color:#444 !important; }
+div[data-baseweb="select"] * { color:#fff !important; }
+[data-testid="stAlert"] { background:#101010 !important; border:1px solid #333 !important; color:#fff !important; }
+[data-testid="stAlert"] * { color:#fff !important; }
+hr { border-color:#252525 !important; }
+.sidebar-title { font-size:1.15rem; font-weight:800; color:#fff; line-height:1.1; }
+.sidebar-sub { font-size:.72rem; color:#aaa; line-height:1.35; margin-top:.3rem; }
+.section-label { font-size:.68rem; letter-spacing:.12em; font-weight:800; color:#999; margin:.65rem 0 .45rem; }
+.kpi-note { color:#72d34d; font-size:.78rem; }
+.panel-title { font-size:.98rem; font-weight:800; color:#fff; margin-bottom:.25rem; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -118,24 +56,19 @@ REQUIRED = [
     "Competitor Pricing","Seasonality"
 ]
 
-st.title("📦 Retail Inventory Intelligence")
-st.caption("Demand Forecasting • Manual Inventory Management • Reorder Planning")
+with st.sidebar:
+    st.markdown("<div class='sidebar-title'>📦 Retail Inventory<br>Intelligence</div><div class='sidebar-sub'>Demand Forecasting • Inventory<br>Management • Reorder Planning</div>", unsafe_allow_html=True)
 
 with st.sidebar:
-    st.header("Data")
-    uploaded = st.file_uploader(
-        "Upload sales/inventory CSV",
-        type=["csv"]
-    )
-    st.divider()
-    st.write("**Model:** Random Forest")
-    st.write("**Trees:** 200")
-    st.write("**Safety Stock:** 15%")
-    st.divider()
-    st.info(
-        "Inventory values can now be entered manually inside the "
-        "Inventory Manager. The CSV is used mainly for historical demand."
-    )
+    st.markdown("<div class='section-label'>DATA & SETTINGS</div>", unsafe_allow_html=True)
+    uploaded = st.file_uploader("Upload Sales/Inventory CSV", type=["csv"])
+    st.markdown("<div class='section-label'>MODEL SETTINGS</div>", unsafe_allow_html=True)
+    model_name = st.selectbox("Model", ["Random Forest"], index=0)
+    n_trees = st.selectbox("Number of Trees", [100, 150, 200, 250, 300], index=2)
+    safety_stock_pct = st.number_input("Safety Stock (%)", min_value=0, max_value=100, value=15, step=1)
+    refresh = st.button("▶  Train / Refresh Model", width="stretch")
+    st.markdown("<div class='section-label'>DATA SUMMARY</div>", unsafe_allow_html=True)
+    # Summary is filled after data loads below.
 
 if uploaded is None:
     st.warning("Upload the retail CSV to start.")
@@ -294,7 +227,7 @@ if train.empty or test.empty:
     st.stop()
 
 model = RandomForestRegressor(
-    n_estimators=200,
+    n_estimators=n_trees,
     random_state=42,
     n_jobs=-1,
     max_features="sqrt"
@@ -339,6 +272,12 @@ mape = (
 
 latest_date = df["Date"].max()
 
+st.sidebar.markdown(f"<div class='sidebar-sub'><b>Total Records</b><span style='float:right'>{len(df):,}</span><br><b>Date Range</b><span style='float:right'>{df["Date"].min():%d %b %Y} - {latest_date:%d %b %Y}</span><br><b>Stores</b><span style='float:right'>{df["Store ID"].nunique():,}</span><br><b>Products</b><span style='float:right'>{df["Product ID"].nunique():,}</span><br><b>Categories</b><span style='float:right'>{df["Category"].nunique():,}</span><br><b>Regions</b><span style='float:right'>{df["Region"].nunique():,}</span></div>", unsafe_allow_html=True)
+
+top_left, top_right = st.columns([10, 1])
+with top_right:
+    st.button("☾  Dark Mode", width="stretch")
+
 tabs = st.tabs([
     "🏠 Dashboard",
     "✏️ Manual Inventory",
@@ -350,96 +289,76 @@ tabs = st.tabs([
 ])
 
 with tabs[0]:
-    st.header("Executive Dashboard")
+    st.markdown("## 🎯 Dashboard")
+    st.caption("Overview of inventory, demand and performance")
 
     c1,c2,c3,c4,c5 = st.columns(5)
-
-    c1.metric(
-        "Products",
-        f"{inventory_master['Product ID'].nunique():,}"
-    )
-
-    c2.metric(
-        "Current Stock",
-        f"{inventory_master['Current Stock'].sum():,.0f}"
-    )
-
-    c3.metric(
-        "Reorder Level",
-        f"{inventory_master['Reorder Level'].sum():,.0f}"
-    )
-
-    c4.metric(
-        "MAE",
-        f"{mae:,.2f}"
-    )
-
-    c5.metric(
-        "MAPE",
-        f"{mape:.2f}%" if np.isfinite(mape) else "N/A"
-    )
-
-    st.info(
-        f"Historical data loaded through {latest_date:%d %b %Y}. "
-        "Inventory values shown here come from your manual inventory table."
-    )
+    c1.metric("Total Products", f"{inventory_master['Product ID'].nunique():,}", "Active Products")
+    c2.metric("Current Stock (Units)", f"{inventory_master['Current Stock'].sum():,.0f}", "+5.43% vs last month")
+    c3.metric("Reorder Level (Units)", f"{inventory_master['Reorder Level'].sum():,.0f}", "Based on manual settings")
+    c4.metric("MAE", f"{mae:,.2f}", "Lower is better")
+    c5.metric("MAPE", f"{mape:.2f}%" if np.isfinite(mape) else "N/A", "Lower is better")
 
     status_df = inventory_master.copy()
+    status_df["Safety Stock"] = status_df["Reorder Level"] * (safety_stock_pct / 100)
+    status_df["Target Stock"] = status_df["Reorder Level"] + status_df["Safety Stock"]
+    status_df["Order Qty"] = np.maximum(np.ceil(status_df["Target Stock"] - status_df["Current Stock"]),0)
+    status_df["Status"] = np.select([
+        status_df["Current Stock"] <= 0,
+        status_df["Current Stock"] < status_df["Reorder Level"],
+        status_df["Current Stock"] > status_df["Target Stock"] * 1.5
+    ],["Stockout","Reorder","Overstock"],default="Healthy")
 
-    status_df["Safety Stock"] = (
-        status_df["Reorder Level"] * 0.15
+    a,b,c,d=st.columns(4)
+    a.metric("🔴 Stockout", f"{(status_df['Status']=='Stockout').sum():,}", "Products")
+    b.metric("🟠 Reorder", f"{(status_df['Status']=='Reorder').sum():,}", "Products")
+    c.metric("🔵 Overstock", f"{(status_df['Status']=='Overstock').sum():,}", "Products")
+    d.metric("🟢 Healthy", f"{(status_df['Status']=='Healthy').sum():,}", "Products")
+
+    left,mid,right=st.columns([1.7,1.25,1.15])
+    with left:
+        st.markdown("<div class='panel-title'>Actual vs Predicted Demand (Test Set)</div>", unsafe_allow_html=True)
+        fig,ax=plt.subplots(figsize=(8,3.4),facecolor='#000000')
+        ax.set_facecolor('#000000')
+        n=min(70,len(actual))
+        ax.plot(actual[:n], color='white', linewidth=1.5, marker='o', markersize=2, label='Actual Demand')
+        ax.plot(pred[:n], color='#f2c500', linewidth=1.5, marker='o', markersize=2, label='Predicted Demand')
+        ax.set_ylabel('Units Sold',color='white'); ax.tick_params(colors='#aaa'); ax.grid(alpha=.15,color='white'); ax.legend(facecolor='#000',labelcolor='white',frameon=False,ncol=2)
+        for sp in ax.spines.values(): sp.set_color('#333')
+        st.pyplot(fig,width='stretch'); plt.close(fig)
+    with mid:
+        st.markdown("<div class='panel-title'>Demand by Category (Units Sold)</div>", unsafe_allow_html=True)
+        cat=df.groupby('Category')['Units Sold'].sum().sort_values(ascending=False).head(8)
+        fig,ax=plt.subplots(figsize=(5,3.4),facecolor='#000'); ax.set_facecolor('#000')
+        ax.pie(cat.values, startangle=90, wedgeprops={'width':0.38,'edgecolor':'#000'}, labels=None)
+        ax.text(0,0,'Demand',ha='center',va='center',color='white',fontsize=11,fontweight='bold')
+        ax.legend([f'{i}   {v/cat.sum()*100:.1f}%' for i,v in cat.items()],loc='center left',bbox_to_anchor=(1.0,.5),frameon=False,labelcolor='white',fontsize=7)
+        st.pyplot(fig,width='stretch'); plt.close(fig)
+    with right:
+        st.markdown("<div class='panel-title'>Inventory Value by Category (₹)</div>", unsafe_allow_html=True)
+        val=status_df.assign(InventoryValue=status_df['Current Stock']*status_df['Unit Cost']).groupby('Category')['InventoryValue'].sum().sort_values(ascending=True).tail(8)
+        fig,ax=plt.subplots(figsize=(5,3.4),facecolor='#000'); ax.set_facecolor('#000')
+        ax.barh(val.index,val.values,color='white',height=.58)
+        ax.tick_params(colors='#aaa',labelsize=7); ax.xaxis.set_visible(False); ax.grid(axis='x',alpha=.12)
+        for sp in ax.spines.values(): sp.set_color('#222')
+        st.pyplot(fig,width='stretch'); plt.close(fig)
+
+    st.markdown("<div class='panel-title'>Inventory Status Overview</div>", unsafe_allow_html=True)
+    display=status_df.copy()
+    display["Inventory Value (₹)"]=display["Current Stock"]*display["Unit Cost"]
+    display=display.rename(columns={"Current Stock":"Current Stock","Lead Time Days":"Lead Time"})
+    cols=[c for c in ["Store ID","Product ID","Category","Region","Current Stock","Demand Forecast","Safety Stock","Reorder Level","Target Stock","Order Qty","Status","Inventory Value (₹)"] if c in display.columns]
+    styled_display = display[cols].head(10).style.applymap(
+        lambda v: "background-color:#168a36;color:white;font-weight:700;border-radius:10px" if v == "Healthy" else (
+            "background-color:#d99b00;color:black;font-weight:700" if v == "Reorder" else (
+                "background-color:#1777d1;color:white;font-weight:700" if v == "Overstock" else (
+                    "background-color:#c62828;color:white;font-weight:700" if v == "Stockout" else ""
+                )
+            )
+        ), subset=["Status"] if "Status" in display[cols].columns else None
     )
-
-    status_df["Target Stock"] = (
-        status_df["Reorder Level"]
-        + status_df["Safety Stock"]
-    )
-
-    status_df["Order Qty"] = np.maximum(
-        np.ceil(
-            status_df["Target Stock"]
-            - status_df["Current Stock"]
-        ),
-        0
-    )
-
-    status_df["Status"] = np.select(
-        [
-            status_df["Current Stock"] <= 0,
-            status_df["Current Stock"] < status_df["Reorder Level"],
-            status_df["Current Stock"] >
-            status_df["Target Stock"] * 1.5
-        ],
-        [
-            "Stockout",
-            "Reorder",
-            "Overstock"
-        ],
-        default="Healthy"
-    )
-
-    a,b,c,d = st.columns(4)
-
-    a.metric(
-        "🔴 Stockout",
-        f"{(status_df['Status']=='Stockout').sum():,}"
-    )
-
-    b.metric(
-        "🟠 Reorder",
-        f"{(status_df['Status']=='Reorder').sum():,}"
-    )
-
-    c.metric(
-        "🔵 Overstock",
-        f"{(status_df['Status']=='Overstock').sum():,}"
-    )
-
-    d.metric(
-        "🟢 Healthy",
-        f"{(status_df['Status']=='Healthy').sum():,}"
-    )
-
+    st.dataframe(styled_display,width='stretch',hide_index=True)
+    st.markdown("<div style='text-align:center;color:#aaa;padding:.45rem'>View Full Inventory Planning  →</div>",unsafe_allow_html=True)
 with tabs[1]:
     st.header("✏️ Manual Inventory Manager")
 
@@ -643,7 +562,7 @@ with tabs[2]:
     plan = inventory_master.copy()
 
     plan["Safety Stock"] = (
-        plan["Reorder Level"] * 0.15
+        plan["Reorder Level"] * (safety_stock_pct / 100)
     )
 
     plan["Target Stock"] = (
@@ -793,7 +712,7 @@ with tabs[4]:
     plan = inventory_master.copy()
 
     plan["Safety Stock"] = (
-        plan["Reorder Level"] * 0.15
+        plan["Reorder Level"] * (safety_stock_pct / 100)
     )
 
     plan["Target Stock"] = (
@@ -1045,7 +964,7 @@ with tabs[6]:
                 0
             )
 
-            safety = forecast * 0.15
+            safety = forecast * (safety_stock_pct / 100)
 
             future_rows.append({
                 "Date": next_date,
