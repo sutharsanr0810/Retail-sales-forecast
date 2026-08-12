@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -348,14 +347,15 @@ with tabs[0]:
     display["Inventory Value (₹)"]=display["Current Stock"]*display["Unit Cost"]
     display=display.rename(columns={"Current Stock":"Current Stock","Lead Time Days":"Lead Time"})
     cols=[c for c in ["Store ID","Product ID","Category","Region","Current Stock","Demand Forecast","Safety Stock","Reorder Level","Target Stock","Order Qty","Status","Inventory Value (₹)"] if c in display.columns]
-    styled_display = display[cols].head(10).style.applymap(
-        lambda v: "background-color:#168a36;color:white;font-weight:700;border-radius:10px" if v == "Healthy" else (
+    styled_display = display[cols].head(10).style.map(
+        lambda v: "background-color:#168a36;color:white;font-weight:700" if v == "Healthy" else (
             "background-color:#d99b00;color:black;font-weight:700" if v == "Reorder" else (
                 "background-color:#1777d1;color:white;font-weight:700" if v == "Overstock" else (
                     "background-color:#c62828;color:white;font-weight:700" if v == "Stockout" else ""
                 )
             )
-        ), subset=["Status"] if "Status" in display[cols].columns else None
+        ),
+        subset=["Status"] if "Status" in display[cols].columns else None
     )
     st.dataframe(styled_display,width='stretch',hide_index=True)
     st.markdown("<div style='text-align:center;color:#aaa;padding:.45rem'>View Full Inventory Planning  →</div>",unsafe_allow_html=True)
