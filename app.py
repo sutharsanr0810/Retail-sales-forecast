@@ -2,14 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib.ticker as mticker
-
 from sklearn.ensemble import RandomForestRegressor
-
-
-# ============================================================
-# PAGE CONFIG
-# ============================================================
 
 st.set_page_config(
     page_title="Retail Intelligence",
@@ -18,201 +11,37 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+st.title("📦 Retail Demand Forecasting & Inventory Planning")
 
-# ============================================================
-# CUSTOM CSS
-# ============================================================
+st.caption(
+    "Machine Learning • Random Forest • Retail Analytics"
+)
 
-st.markdown("""
-<style>
+st.write(
+    "Analyze historical retail transactions, forecast future demand, "
+    "identify demand patterns, and support inventory planning "
+    "through machine learning."
+)
 
-    .stApp {
-        background-color: #f8fafc;
-    }
-
-    [data-testid="stSidebar"] {
-        background-color: #0f172a;
-    }
-
-    [data-testid="stSidebar"] * {
-        color: #e2e8f0;
-    }
-
-    .hero {
-        padding: 35px;
-        border-radius: 20px;
-        background: linear-gradient(
-            135deg,
-            #0f172a,
-            #172554,
-            #1d4ed8
-        );
-        margin-bottom: 25px;
-    }
-
-    .hero-badge {
-        color: #bfdbfe;
-        font-size: 12px;
-        font-weight: 700;
-        letter-spacing: 1px;
-        margin-bottom: 12px;
-    }
-
-    .hero-title {
-        color: white;
-        font-size: 34px;
-        font-weight: 800;
-        line-height: 1.2;
-    }
-
-    .hero-text {
-        color: #cbd5e1;
-        font-size: 14px;
-        line-height: 1.6;
-        max-width: 850px;
-        margin-top: 12px;
-    }
-
-    .section-title {
-        font-size: 22px;
-        font-weight: 800;
-        color: #0f172a;
-        margin-top: 25px;
-    }
-
-    .section-text {
-        color: #64748b;
-        font-size: 13px;
-        margin-bottom: 15px;
-    }
-
-    .metric-box {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 15px;
-        padding: 18px;
-        min-height: 115px;
-        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
-    }
-
-    .metric-label {
-        color: #64748b;
-        font-size: 11px;
-        font-weight: 700;
-        text-transform: uppercase;
-        letter-spacing: 0.7px;
-    }
-
-    .metric-value {
-        color: #0f172a;
-        font-size: 25px;
-        font-weight: 800;
-        margin-top: 7px;
-    }
-
-    .metric-sub {
-        color: #94a3b8;
-        font-size: 11px;
-        margin-top: 5px;
-    }
-
-    .info-box {
-        background: white;
-        border: 1px solid #e2e8f0;
-        border-radius: 15px;
-        padding: 20px;
-    }
-
-</style>
-""", unsafe_allow_html=True)
-
-
-# ============================================================
-# HELPER FUNCTIONS
-# ============================================================
-
-def metric_card(label, value, description=""):
-
-    st.markdown(
-        f"""
-        <div class="metric-box">
-            <div class="metric-label">{label}</div>
-            <div class="metric-value">{value}</div>
-            <div class="metric-sub">{description}</div>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
-
-
-def format_number(value):
-
-    if pd.isna(value):
-        return "N/A"
-
-    value = float(value)
-
-    if abs(value) >= 1_000_000:
-        return f"{value / 1_000_000:.1f}M"
-
-    if abs(value) >= 1_000:
-        return f"{value / 1_000:.1f}K"
-
-    return f"{value:,.0f}"
-
-
-def calculate_mape(actual, predicted):
-
-    actual = np.asarray(actual)
-    predicted = np.asarray(predicted)
-
-    mask = actual != 0
-
-    if mask.sum() == 0:
-        return np.nan
-
-    return np.mean(
-        np.abs(
-            (actual[mask] - predicted[mask])
-            / actual[mask]
-        )
-    ) * 100
-
-
-# ============================================================
-# SIDEBAR
-# ============================================================
+st.divider()
 
 with st.sidebar:
-
     st.title("📦 Retail Intelligence")
-
-    st.caption(
-        "Demand Forecasting & Inventory Planning"
-    )
+    st.caption("Demand Forecasting & Inventory Planning")
 
     st.divider()
 
     st.subheader("Project")
-
-    st.write("**Model**")
-    st.write("Random Forest")
-
-    st.write("**Estimators**")
-    st.write("200 Trees")
-
-    st.write("**Learning Type**")
-    st.write("Supervised ML")
-
-    st.write("**Forecast Target**")
-    st.write("Future Sales")
+    st.write("**Model:** Random Forest")
+    st.write("**Estimators:** 200 Trees")
+    st.write("**Learning Type:** Supervised ML")
+    st.write("**Forecast Target:** Future Sales")
 
     st.divider()
 
     st.subheader("Dashboard")
-
-    st.caption(
-        "Use the dashboard sections to explore "
+    st.write(
+        "Use the sections on the dashboard to explore "
         "forecast performance, inventory planning, "
         "demand spikes, business insights and "
         "next-month forecasts."
@@ -220,87 +49,26 @@ with st.sidebar:
 
     st.divider()
 
-    st.caption(
-        "Retail Demand Forecasting Project"
-    )
+    st.caption("Retail Demand Forecasting Project")
 
-
-# ============================================================
-# HERO
-# ============================================================
-
-st.markdown(
-    """
-    <div class="hero">
-
-        <div class="hero-badge">
-            MACHINE LEARNING • RANDOM FOREST • RETAIL ANALYTICS
-        </div>
-
-        <div class="hero-title">
-            Retail Demand Forecasting
-            <br>
-            & Inventory Planning
-        </div>
-
-        <div class="hero-text">
-            Analyze historical retail transactions, forecast future demand,
-            identify demand patterns, and support inventory planning
-            through machine learning.
-        </div>
-
-    </div>
-    """,
-    unsafe_allow_html=True
-)
-
-
-# ============================================================
-# UPLOAD DATASET
-# ============================================================
-
-st.subheader("Upload Retail Dataset")
+st.header("Upload Retail Dataset")
 
 uploaded_file = st.file_uploader(
     "Upload your retail transaction CSV",
     type=["csv"]
 )
 
-
-# ============================================================
-# EMPTY STATE
-# ============================================================
-
 if uploaded_file is None:
-
     st.info(
-        "📊 Upload your retail transaction CSV above "
-        "to generate forecasts and business insights."
+        "Upload the retail CSV dataset to start the analysis."
     )
-
     st.stop()
-
-
-# ============================================================
-# LOAD DATA
-# ============================================================
 
 try:
-
     df = pd.read_csv(uploaded_file)
-
 except Exception as e:
-
-    st.error(
-        f"Unable to read the CSV file: {e}"
-    )
-
+    st.error(f"Unable to read the CSV file: {e}")
     st.stop()
-
-
-# ============================================================
-# REQUIRED COLUMNS
-# ============================================================
 
 required_columns = [
     "Order Date",
@@ -319,42 +87,25 @@ missing_columns = [
 ]
 
 if missing_columns:
-
     st.error(
-        "The uploaded dataset is missing required columns:"
+        "The uploaded dataset is missing the following required columns:"
     )
 
-    st.write(missing_columns)
+    for column in missing_columns:
+        st.write(f"- {column}")
 
     st.stop()
-
-
-# ============================================================
-# DATE PROCESSING
-# ============================================================
 
 try:
-
-    df["Order Date"] = pd.to_datetime(
-        df["Order Date"]
-    )
-
+    df["Order Date"] = pd.to_datetime(df["Order Date"])
 except Exception:
-
     st.error(
-        "Order Date could not be converted to a valid date."
+        "The 'Order Date' column could not be converted to a valid date."
     )
-
     st.stop()
-
 
 df["order_year"] = df["Order Date"].dt.year
 df["order_month"] = df["Order Date"].dt.month
-
-
-# ============================================================
-# MONTHLY AGGREGATION
-# ============================================================
 
 monthly = (
     df.groupby(
@@ -381,11 +132,6 @@ monthly = (
         ]
     )
 )
-
-
-# ============================================================
-# FEATURE ENGINEERING
-# ============================================================
 
 monthly["sales_lag_1"] = (
     monthly
@@ -419,36 +165,21 @@ monthly["sales_growth"] = (
     .pct_change()
 )
 
-
-# ============================================================
-# DEMAND SPIKE
-# EXISTING PROJECT THRESHOLD = 20%
-# ============================================================
-
 monthly["demand_spike"] = (
     monthly["sales_growth"] > 0.20
 ).astype(int)
 
-
-# Remove rows where lag/rolling features don't exist
-
-monthly = monthly.dropna().reset_index(drop=True)
-
-
-# ============================================================
-# ENCODING
-# ============================================================
+monthly = (
+    monthly
+    .dropna()
+    .reset_index(drop=True)
+)
 
 monthly_encoded = pd.get_dummies(
     monthly,
     columns=["Category of Goods"],
     drop_first=True
 )
-
-
-# ============================================================
-# FEATURES
-# ============================================================
 
 excluded_columns = [
     "Sales",
@@ -465,11 +196,6 @@ features = [
     if column not in excluded_columns
 ]
 
-
-# ============================================================
-# TRAIN / TEST SPLIT
-# ============================================================
-
 latest_year = int(
     monthly_encoded["order_year"].max()
 )
@@ -482,16 +208,11 @@ test = monthly_encoded[
     monthly_encoded["order_year"] == latest_year
 ]
 
-
 if train.empty or test.empty:
-
     st.error(
-        "Not enough yearly data to create the "
-        "train/test split."
+        "There is not enough yearly data to create the train/test split."
     )
-
     st.stop()
-
 
 X_train = train[features]
 y_train = train["Sales"]
@@ -499,153 +220,105 @@ y_train = train["Sales"]
 X_test = test[features]
 y_test = test["Sales"]
 
-
-# ============================================================
-# RANDOM FOREST
-# ============================================================
-
-rf = RandomForestRegressor(
+model = RandomForestRegressor(
     n_estimators=200,
     random_state=42
 )
 
-rf.fit(
+model.fit(
     X_train,
     y_train
 )
 
-
-# ============================================================
-# PREDICTION
-# ============================================================
-
-pred_sales = rf.predict(
+predictions = model.predict(
     X_test
 )
 
-
-# ============================================================
-# MODEL EVALUATION
-# ============================================================
+actual = y_test.values
 
 mae = np.mean(
     np.abs(
-        y_test.values - pred_sales
+        actual - predictions
     )
 )
 
 rmse = np.sqrt(
     np.mean(
-        (y_test.values - pred_sales) ** 2
+        (actual - predictions) ** 2
     )
 )
 
-mape = calculate_mape(
-    y_test.values,
-    pred_sales
-)
+non_zero_mask = actual != 0
 
+if non_zero_mask.sum() > 0:
+    mape = np.mean(
+        np.abs(
+            (
+                actual[non_zero_mask]
+                - predictions[non_zero_mask]
+            )
+            /
+            actual[non_zero_mask]
+        )
+    ) * 100
+else:
+    mape = np.nan
 
-# ============================================================
-# EXECUTIVE OVERVIEW
-# ============================================================
-
-st.markdown(
-    '<div class="section-title">Executive Overview</div>',
-    unsafe_allow_html=True
-)
-
-st.markdown(
-    '<div class="section-text">Quick snapshot of the dataset and forecasting model</div>',
-    unsafe_allow_html=True
-)
-
+st.header("Executive Overview")
 
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-
-    metric_card(
+    st.metric(
         "Transactions",
-        f"{len(df):,}",
-        "records analyzed"
+        f"{len(df):,}"
     )
 
 with c2:
-
-    metric_card(
+    st.metric(
         "Categories",
-        f"{df['Category of Goods'].nunique():,}",
-        "product categories"
+        f"{df['Category of Goods'].nunique():,}"
     )
 
 with c3:
-
-    metric_card(
-        "Forecast Accuracy",
-        f"{mape:.2f}%",
-        "MAPE • lower is better"
+    st.metric(
+        "Forecast MAPE",
+        f"{mape:.2f}%"
     )
 
 with c4:
-
-    metric_card(
+    st.metric(
         "Model",
-        "Random Forest",
-        "200 estimators"
+        "Random Forest"
     )
 
-
-# ============================================================
-# BUSINESS KPIs
-# ============================================================
-
-st.write("")
+st.subheader("Business Overview")
 
 c1, c2, c3, c4 = st.columns(4)
 
 with c1:
-
-    metric_card(
+    st.metric(
         "Total Sales",
-        format_number(
-            df["Sales"].sum()
-        ),
-        "historical sales"
+        f"{df['Sales'].sum():,.0f}"
     )
 
 with c2:
-
-    metric_card(
+    st.metric(
         "Units Sold",
-        format_number(
-            df["Quantity"].sum()
-        ),
-        "total quantity"
+        f"{df['Quantity'].sum():,.0f}"
     )
 
 with c3:
-
-    metric_card(
+    st.metric(
         "Total Profit",
-        format_number(
-            df["Profit"].sum()
-        ),
-        "historical profit"
+        f"{df['Profit'].sum():,.0f}"
     )
 
 with c4:
-
-    metric_card(
+    st.metric(
         "Test Year",
-        str(latest_year),
-        "most recent year held out"
+        str(latest_year)
     )
-
-
-# ============================================================
-# TABS
-# ============================================================
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(
     [
@@ -657,45 +330,32 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(
     ]
 )
 
-
-# ============================================================
-# TAB 1 - FORECAST PERFORMANCE
-# ============================================================
-
 with tab1:
-
     st.header("Model Accuracy")
 
     st.caption(
-        "Evaluated on the most recent year held out from training."
+        "The most recent year is held out as test data."
     )
 
     c1, c2, c3 = st.columns(3)
 
     with c1:
-
-        metric_card(
-            "Mean Absolute Error",
-            f"{mae:,.0f}",
-            "MAE • lower is better"
+        st.metric(
+            "MAE",
+            f"{mae:,.0f}"
         )
 
     with c2:
-
-        metric_card(
-            "Root Mean Squared Error",
-            f"{rmse:,.0f}",
-            "RMSE • lower is better"
+        st.metric(
+            "RMSE",
+            f"{rmse:,.0f}"
         )
 
     with c3:
-
-        metric_card(
-            "Mean Absolute Percentage Error",
-            f"{mape:.2f}%",
-            "MAPE • lower is better"
+        st.metric(
+            "MAPE",
+            f"{mape:.2f}%"
         )
-
 
     st.subheader("Actual vs Predicted Sales")
 
@@ -704,42 +364,25 @@ with tab1:
     )
 
     ax.plot(
-        y_test.values,
+        actual,
         label="Actual Sales",
         linewidth=2
     )
 
     ax.plot(
-        pred_sales,
+        predictions,
         label="Predicted Sales",
         linewidth=2,
         linestyle="--"
     )
 
-    ax.set_xlabel(
-        "Test Observation"
-    )
-
-    ax.set_ylabel(
-        "Sales"
-    )
-
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(
-            lambda x, _: f"{x:,.0f}"
-        )
-    )
-
+    ax.set_xlabel("Test Observation")
+    ax.set_ylabel("Sales")
+    ax.set_title("Actual vs Predicted Sales")
+    ax.legend()
     ax.grid(
         axis="y",
-        alpha=0.2
-    )
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-
-    ax.legend(
-        frameon=False
+        alpha=0.25
     )
 
     st.pyplot(
@@ -749,21 +392,23 @@ with tab1:
 
     plt.close(fig)
 
-
-    # Feature importance
-
     st.subheader("Feature Importance")
 
     importance_df = pd.DataFrame(
         {
             "Feature": features,
-            "Importance": rf.feature_importances_
+            "Importance": model.feature_importances_
         }
-    ).sort_values(
-        "Importance",
-        ascending=False
-    ).head(10)
+    )
 
+    importance_df = (
+        importance_df
+        .sort_values(
+            "Importance",
+            ascending=False
+        )
+        .head(10)
+    )
 
     fig, ax = plt.subplots(
         figsize=(10, 5)
@@ -775,18 +420,12 @@ with tab1:
     )
 
     ax.invert_yaxis()
-
-    ax.set_xlabel(
-        "Importance"
-    )
-
+    ax.set_xlabel("Importance")
+    ax.set_title("Top Model Features")
     ax.grid(
         axis="x",
-        alpha=0.2
+        alpha=0.25
     )
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
 
     st.pyplot(
         fig,
@@ -795,20 +434,13 @@ with tab1:
 
     plt.close(fig)
 
-
-# ============================================================
-# TAB 2 - INVENTORY PLANNING
-# ============================================================
-
 with tab2:
-
     st.header("Inventory Planning")
 
     st.caption(
-        "Forecast-based inventory planning using the project's "
-        "15% safety-stock buffer."
+        "Inventory recommendation based on predicted demand "
+        "with the project's 15% safety-stock buffer."
     )
-
 
     inventory = test[
         [
@@ -817,8 +449,7 @@ with tab2:
         ]
     ].copy()
 
-
-    inventory["Predicted Demand"] = pred_sales
+    inventory["Predicted Demand"] = predictions
 
     inventory["Safety Stock"] = (
         inventory["Predicted Demand"] * 0.15
@@ -826,57 +457,45 @@ with tab2:
 
     inventory["Recommended Inventory"] = (
         inventory["Predicted Demand"]
-        + inventory["Safety Stock"]
+        +
+        inventory["Safety Stock"]
     )
-
 
     c1, c2, c3 = st.columns(3)
 
     with c1:
-
-        metric_card(
+        st.metric(
             "Predicted Demand",
-            format_number(
-                inventory["Predicted Demand"].sum()
-            ),
-            "test-period forecast"
+            f"{inventory['Predicted Demand'].sum():,.0f}"
         )
 
     with c2:
-
-        metric_card(
+        st.metric(
             "Safety Stock",
-            format_number(
-                inventory["Safety Stock"].sum()
-            ),
-            "15% buffer"
+            f"{inventory['Safety Stock'].sum():,.0f}"
         )
 
     with c3:
-
-        metric_card(
+        st.metric(
             "Recommended Inventory",
-            format_number(
-                inventory["Recommended Inventory"].sum()
-            ),
-            "forecast + safety stock"
+            f"{inventory['Recommended Inventory'].sum():,.0f}"
         )
 
-
     st.subheader("Inventory Plan")
-
 
     inventory_display = inventory.copy()
 
     inventory_display["Period"] = (
-        inventory_display["order_year"].astype(str)
-        + "-"
-        + inventory_display["order_month"]
+        inventory_display["order_year"]
+        .astype(str)
+        +
+        "-"
+        +
+        inventory_display["order_month"]
         .astype(int)
         .astype(str)
         .str.zfill(2)
     )
-
 
     inventory_display = inventory_display[
         [
@@ -887,30 +506,22 @@ with tab2:
         ]
     ]
 
-
     st.dataframe(
         inventory_display,
         use_container_width=True,
         hide_index=True
     )
 
-
     st.download_button(
-        "⬇ Download Inventory Plan",
-        inventory_display.to_csv(
+        label="⬇ Download Inventory Plan",
+        data=inventory_display.to_csv(
             index=False
         ).encode("utf-8"),
-        "inventory_plan.csv",
-        "text/csv"
+        file_name="inventory_plan.csv",
+        mime="text/csv"
     )
 
-
-# ============================================================
-# TAB 3 - DEMAND SPIKES
-# ============================================================
-
 with tab3:
-
     st.header("Demand Spike Detection")
 
     st.caption(
@@ -918,42 +529,38 @@ with tab3:
         "sales growth exceeds 20%."
     )
 
-
     spikes = monthly[
         monthly["demand_spike"] == 1
     ]
 
-
     spike_count = len(spikes)
 
-    spike_rate = (
-        spike_count / len(monthly) * 100
-        if len(monthly) > 0
-        else 0
-    )
-
+    if len(monthly) > 0:
+        spike_rate = (
+            spike_count
+            /
+            len(monthly)
+            *
+            100
+        )
+    else:
+        spike_rate = 0
 
     c1, c2 = st.columns(2)
 
     with c1:
-
-        metric_card(
+        st.metric(
             "Demand Spike Events",
-            f"{spike_count:,}",
-            "detected observations"
+            f"{spike_count:,}"
         )
 
     with c2:
-
-        metric_card(
+        st.metric(
             "Spike Rate",
-            f"{spike_rate:.1f}%",
-            "monthly observations"
+            f"{spike_rate:.1f}%"
         )
 
-
     st.subheader("Demand Spike Distribution")
-
 
     spike_counts = (
         monthly["demand_spike"]
@@ -961,22 +568,20 @@ with tab3:
         .sort_index()
     )
 
-
     labels = []
     values = []
 
-
     if 0 in spike_counts.index:
-
         labels.append("No Spike")
-        values.append(spike_counts.loc[0])
-
+        values.append(
+            spike_counts.loc[0]
+        )
 
     if 1 in spike_counts.index:
-
         labels.append("Spike")
-        values.append(spike_counts.loc[1])
-
+        values.append(
+            spike_counts.loc[1]
+        )
 
     fig, ax = plt.subplots(
         figsize=(8, 4)
@@ -987,17 +592,12 @@ with tab3:
         values
     )
 
-    ax.set_ylabel(
-        "Observations"
-    )
-
+    ax.set_ylabel("Observations")
+    ax.set_title("Demand Spike Distribution")
     ax.grid(
         axis="y",
-        alpha=0.2
+        alpha=0.25
     )
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
 
     st.pyplot(
         fig,
@@ -1006,9 +606,7 @@ with tab3:
 
     plt.close(fig)
 
-
     st.subheader("Detected Spike Events")
-
 
     spike_display = spikes[
         [
@@ -1020,9 +618,20 @@ with tab3:
         ]
     ].copy()
 
+    spike_display["sales_growth"] = (
+        spike_display["sales_growth"]
+        * 100
+    )
 
-    spike_display["sales_growth"] *= 100
-
+    spike_display = spike_display.rename(
+        columns={
+            "order_year": "Year",
+            "order_month": "Month",
+            "Category of Goods": "Category",
+            "Sales": "Sales",
+            "sales_growth": "Growth %"
+        }
+    )
 
     st.dataframe(
         spike_display,
@@ -1030,25 +639,17 @@ with tab3:
         hide_index=True
     )
 
-
-# ============================================================
-# TAB 4 - BUSINESS INSIGHTS
-# ============================================================
-
 with tab4:
-
     st.header("Business Insights")
 
     st.caption(
-        "Key patterns identified from the historical retail data."
+        "Insights generated from the historical retail data."
     )
-
 
     monthly_average = (
         df.groupby("order_month")["Sales"]
         .mean()
     )
-
 
     best_month = int(
         monthly_average.idxmax()
@@ -1057,7 +658,6 @@ with tab4:
     weakest_month = int(
         monthly_average.idxmin()
     )
-
 
     category_sales = (
         df.groupby(
@@ -1069,7 +669,6 @@ with tab4:
         )
     )
 
-
     region_sales = (
         df.groupby(
             "Region"
@@ -1080,49 +679,41 @@ with tab4:
         )
     )
 
+    top_category = (
+        category_sales.index[0]
+    )
 
-    top_category = category_sales.index[0]
-
-    top_region = region_sales.index[0]
-
+    top_region = (
+        region_sales.index[0]
+    )
 
     c1, c2, c3, c4 = st.columns(4)
 
     with c1:
-
-        metric_card(
+        st.metric(
             "Best Month",
-            str(best_month),
-            "highest average sales"
+            str(best_month)
         )
 
     with c2:
-
-        metric_card(
+        st.metric(
             "Weakest Month",
-            str(weakest_month),
-            "lowest average sales"
+            str(weakest_month)
         )
 
     with c3:
-
-        metric_card(
+        st.metric(
             "Top Category",
-            top_category,
-            "highest total sales"
+            top_category
         )
 
     with c4:
-
-        metric_card(
+        st.metric(
             "Top Region",
-            top_region,
-            "highest total sales"
+            top_region
         )
 
-
     st.subheader("Sales by Category")
-
 
     fig, ax = plt.subplots(
         figsize=(11, 5)
@@ -1133,15 +724,9 @@ with tab4:
         category_sales.values
     )
 
-    ax.set_ylabel(
-        "Total Sales"
-    )
-
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(
-            lambda x, _: f"{x:,.0f}"
-        )
-    )
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Total Sales")
+    ax.set_title("Total Sales by Category")
 
     ax.tick_params(
         axis="x",
@@ -1150,11 +735,8 @@ with tab4:
 
     ax.grid(
         axis="y",
-        alpha=0.2
+        alpha=0.25
     )
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
 
     st.pyplot(
         fig,
@@ -1163,17 +745,17 @@ with tab4:
 
     plt.close(fig)
 
-
     st.subheader("Regional Sales")
 
-
-    regional_df = region_sales.reset_index()
+    regional_df = (
+        region_sales
+        .reset_index()
+    )
 
     regional_df.columns = [
         "Region",
         "Sales"
     ]
-
 
     st.dataframe(
         regional_df,
@@ -1181,22 +763,13 @@ with tab4:
         hide_index=True
     )
 
-
-# ============================================================
-# TAB 5 - NEXT MONTH FORECAST
-# ============================================================
-
 with tab5:
-
     st.header("Next Month Forecast")
 
     st.caption(
         "Category-level forecast generated using the trained "
         "Random Forest model."
     )
-
-
-    # Latest observation for every category
 
     latest_category_rows = (
         monthly
@@ -1214,29 +787,30 @@ with tab5:
         .copy()
     )
 
-
-    future_base = latest_category_rows.copy()
-
-
-    # --------------------------------------------------------
-    # Move to next month
-    # --------------------------------------------------------
-
-    future_base["order_month"] = (
-        future_base["order_month"] % 12
-    ) + 1
-
-
-    future_base["order_year"] = np.where(
-        latest_category_rows["order_month"] == 12,
-        latest_category_rows["order_year"] + 1,
-        latest_category_rows["order_year"]
+    future_base = (
+        latest_category_rows
+        .copy()
     )
 
+    previous_month = (
+        latest_category_rows["order_month"]
+        .values
+    )
 
-    # --------------------------------------------------------
-    # Update lag features
-    # --------------------------------------------------------
+    previous_year = (
+        latest_category_rows["order_year"]
+        .values
+    )
+
+    future_base["order_month"] = (
+        previous_month % 12
+    ) + 1
+
+    future_base["order_year"] = np.where(
+        previous_month == 12,
+        previous_year + 1,
+        previous_year
+    )
 
     future_base["sales_lag_3"] = (
         future_base["sales_lag_2"]
@@ -1260,100 +834,64 @@ with tab5:
         ].mean(axis=1)
     )
 
-
-    # --------------------------------------------------------
-    # Encode future data
-    # --------------------------------------------------------
-
     future_encoded = pd.get_dummies(
         future_base,
         columns=["Category of Goods"],
         drop_first=True
     )
 
-
     for column in features:
-
         if column not in future_encoded.columns:
-
             future_encoded[column] = 0
-
 
     future_X = future_encoded[
         features
     ]
 
-
-    # --------------------------------------------------------
-    # Predict
-    # --------------------------------------------------------
-
-    future_predictions = rf.predict(
+    future_predictions = model.predict(
         future_X
     )
-
 
     future_base[
         "Predicted Next Month Sales"
     ] = future_predictions
-
-
-    # --------------------------------------------------------
-    # 15% inventory buffer
-    # --------------------------------------------------------
 
     future_base[
         "Recommended Inventory"
     ] = (
         future_base[
             "Predicted Next Month Sales"
-        ] * 1.15
+        ]
+        * 1.15
     )
 
+    total_forecast = (
+        future_base[
+            "Predicted Next Month Sales"
+        ].sum()
+    )
 
-    # --------------------------------------------------------
-    # KPI
-    # --------------------------------------------------------
-
-    total_forecast = future_base[
-        "Predicted Next Month Sales"
-    ].sum()
-
-
-    total_inventory = future_base[
-        "Recommended Inventory"
-    ].sum()
-
+    total_inventory = (
+        future_base[
+            "Recommended Inventory"
+        ].sum()
+    )
 
     c1, c2 = st.columns(2)
 
     with c1:
-
-        metric_card(
+        st.metric(
             "Next Month Forecast",
-            format_number(
-                total_forecast
-            ),
-            "predicted sales"
+            f"{total_forecast:,.0f}"
         )
 
     with c2:
-
-        metric_card(
+        st.metric(
             "Recommended Inventory",
-            format_number(
-                total_inventory
-            ),
-            "forecast + 15% buffer"
+            f"{total_inventory:,.0f}"
         )
 
-
-    # --------------------------------------------------------
-    # Forecast table
-    # --------------------------------------------------------
-
     st.subheader("Category Forecast")
-
 
     forecast_display = future_base[
         [
@@ -1365,7 +903,6 @@ with tab5:
         ]
     ].copy()
 
-
     forecast_display.columns = [
         "Category",
         "Year",
@@ -1374,89 +911,66 @@ with tab5:
         "Recommended Inventory"
     ]
 
-
     st.dataframe(
         forecast_display,
         use_container_width=True,
         hide_index=True
     )
 
-
     st.download_button(
-        "⬇ Download Next Month Forecast",
-        forecast_display.to_csv(
+        label="⬇ Download Next Month Forecast",
+        data=forecast_display.to_csv(
             index=False
         ).encode("utf-8"),
-        "next_month_forecast.csv",
-        "text/csv"
+        file_name="next_month_forecast.csv",
+        mime="text/csv"
     )
 
-
-    # --------------------------------------------------------
-    # Forecast chart
-    # --------------------------------------------------------
-
-    chart_data = forecast_display.sort_values(
-        "Predicted Sales",
-        ascending=False
+    st.subheader(
+        "Predicted Sales by Category"
     )
 
+    chart_data = (
+        forecast_display
+        .sort_values(
+            "Predicted Sales",
+            ascending=False
+        )
+    )
 
     fig, ax = plt.subplots(
         figsize=(11, 5)
     )
-
 
     ax.bar(
         chart_data["Category"],
         chart_data["Predicted Sales"]
     )
 
-
-    ax.set_ylabel(
-        "Predicted Sales"
-    )
-
-
-    ax.yaxis.set_major_formatter(
-        mticker.FuncFormatter(
-            lambda x, _: f"{x:,.0f}"
-        )
-    )
-
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Predicted Sales")
+    ax.set_title("Next Month Sales Forecast")
 
     ax.tick_params(
         axis="x",
         rotation=30
     )
 
-
     ax.grid(
         axis="y",
-        alpha=0.2
+        alpha=0.25
     )
-
-
-    ax.spines["top"].set_visible(False)
-    ax.spines["right"].set_visible(False)
-
 
     st.pyplot(
         fig,
         use_container_width=True
     )
 
-
     plt.close(fig)
-
-
-# ============================================================
-# FOOTER
-# ============================================================
 
 st.divider()
 
 st.caption(
-    "Retail Demand Forecasting & Inventory Planning • "
-    "Random Forest • 200 Estimators"
+    "Retail Demand Forecasting & Inventory Planning | "
+    "Random Forest | 200 Estimators"
 )
