@@ -1,302 +1,425 @@
+import textwrap
+
 import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as mticker
+
 from sklearn.ensemble import RandomForestRegressor
 
+
 # ============================================================
-# PAGE CONFIG
+# PAGE CONFIGURATION
 # ============================================================
 
 st.set_page_config(
-    page_title="Retail Intelligence | Demand Forecasting",
+    page_title="Retail Intelligence",
     page_icon="📦",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+
 # ============================================================
-# PROFESSIONAL UI STYLING
+# CUSTOM CSS
 # ============================================================
 
-st.markdown("""
-<style>
+st.markdown(
+    textwrap.dedent(
+        """
+        <style>
 
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-html, body, [class*="css"] {
-    font-family: 'Inter', sans-serif;
-}
+        html, body, [class*="css"] {
+            font-family: 'Inter', sans-serif;
+        }
 
-#MainMenu {
-    visibility: hidden;
-}
+        #MainMenu {
+            visibility: hidden;
+        }
 
-footer {
-    visibility: hidden;
-}
+        footer {
+            visibility: hidden;
+        }
 
-header {
-    visibility: hidden;
-}
+        header {
+            visibility: hidden;
+        }
 
-.block-container {
-    padding-top: 1.5rem;
-    padding-bottom: 3rem;
-    max-width: 1400px;
-}
+        .block-container {
+            max-width: 1450px;
+            padding-top: 1.5rem;
+            padding-bottom: 3rem;
+        }
 
-/* ---------------- SIDEBAR ---------------- */
+        /* ====================================================
+           SIDEBAR
+        ==================================================== */
 
-section[data-testid="stSidebar"] {
-    background: #0f172a;
-}
+        section[data-testid="stSidebar"] {
+            background: #0f172a;
+        }
 
-section[data-testid="stSidebar"] * {
-    color: #e2e8f0;
-}
+        section[data-testid="stSidebar"] * {
+            color: #e2e8f0;
+        }
 
-.sidebar-brand {
-    padding: 8px 0 25px 0;
-}
+        .sidebar-brand {
+            padding: 10px 0 20px 0;
+        }
 
-.sidebar-brand-title {
-    font-size: 20px;
-    font-weight: 800;
-    color: white;
-}
+        .sidebar-title {
+            font-size: 21px;
+            font-weight: 800;
+            color: #ffffff;
+        }
 
-.sidebar-brand-sub {
-    font-size: 12px;
-    color: #94a3b8;
-    margin-top: 4px;
-}
+        .sidebar-subtitle {
+            font-size: 12px;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
 
-/* ---------------- HERO ---------------- */
+        .sidebar-info {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px;
+            padding: 14px;
+            margin-top: 10px;
+        }
 
-.hero {
-    background: linear-gradient(135deg, #0f172a 0%, #172554 55%, #1e3a8a 100%);
-    padding: 38px 42px;
-    border-radius: 20px;
-    margin-bottom: 25px;
-    color: white;
-    position: relative;
-    overflow: hidden;
-}
+        .sidebar-label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.7px;
+            color: #94a3b8;
+            font-weight: 700;
+        }
 
-.hero:after {
-    content: "";
-    position: absolute;
-    width: 280px;
-    height: 280px;
-    right: -90px;
-    top: -120px;
-    border-radius: 50%;
-    background: rgba(59,130,246,0.15);
-}
+        .sidebar-value {
+            font-size: 14px;
+            color: white;
+            font-weight: 600;
+            margin-top: 3px;
+            margin-bottom: 12px;
+        }
 
-.hero-badge {
-    display: inline-block;
-    background: rgba(59,130,246,0.18);
-    color: #93c5fd;
-    padding: 6px 13px;
-    border-radius: 30px;
-    font-size: 11px;
-    font-weight: 700;
-    letter-spacing: 0.5px;
-    border: 1px solid rgba(147,197,253,0.25);
-    margin-bottom: 14px;
-}
+        /* ====================================================
+           HERO
+        ==================================================== */
 
-.hero-title {
-    font-size: 32px;
-    font-weight: 800;
-    margin: 0;
-    color: white;
-    letter-spacing: -0.8px;
-}
+        .hero {
+            background: linear-gradient(
+                135deg,
+                #0f172a 0%,
+                #172554 55%,
+                #1d4ed8 100%
+            );
 
-.hero-sub {
-    font-size: 14px;
-    color: #cbd5e1;
-    margin-top: 9px;
-    max-width: 800px;
-    line-height: 1.6;
-}
+            border-radius: 22px;
+            padding: 42px;
+            margin-bottom: 25px;
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
 
-/* ---------------- SECTION ---------------- */
+        .hero-circle {
+            position: absolute;
+            width: 330px;
+            height: 330px;
+            right: -110px;
+            top: -160px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.06);
+        }
 
-.section-title {
-    font-size: 19px;
-    font-weight: 750;
-    color: #0f172a;
-    margin-top: 28px;
-    margin-bottom: 4px;
-}
+        .hero-circle-two {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            right: 80px;
+            bottom: -150px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+        }
 
-.section-sub {
-    font-size: 13px;
-    color: #64748b;
-    margin-bottom: 17px;
-}
+        .hero-content {
+            position: relative;
+            z-index: 2;
+        }
 
-/* ---------------- KPI CARDS ---------------- */
+        .hero-badge {
+            display: inline-block;
+            padding: 7px 13px;
+            border-radius: 30px;
+            background: rgba(147,197,253,0.12);
+            border: 1px solid rgba(147,197,253,0.25);
+            color: #bfdbfe;
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.8px;
+            margin-bottom: 15px;
+        }
 
-.metric-card {
-    background: white;
-    border: 1px solid #e2e8f0;
-    border-radius: 15px;
-    padding: 20px 21px;
-    min-height: 118px;
-    box-shadow: 0 3px 10px rgba(15,23,42,0.04);
-}
+        .hero-title {
+            font-size: 34px;
+            line-height: 1.15;
+            font-weight: 800;
+            letter-spacing: -1px;
+            color: white;
+        }
 
-.metric-label {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-    letter-spacing: 0.7px;
-}
+        .hero-description {
+            margin-top: 12px;
+            max-width: 850px;
+            font-size: 14px;
+            line-height: 1.65;
+            color: #cbd5e1;
+        }
 
-.metric-value {
-    font-size: 25px;
-    font-weight: 800;
-    color: #0f172a;
-    margin-top: 8px;
-}
+        /* ====================================================
+           SECTION HEADERS
+        ==================================================== */
 
-.metric-sub {
-    font-size: 11px;
-    color: #94a3b8;
-    margin-top: 5px;
-}
+        .section-title {
+            font-size: 20px;
+            font-weight: 800;
+            color: #0f172a;
+            margin-top: 28px;
+            margin-bottom: 4px;
+        }
 
-/* ---------------- STATUS CARDS ---------------- */
+        .section-description {
+            color: #64748b;
+            font-size: 13px;
+            margin-bottom: 17px;
+        }
 
-.status-card {
-    border-radius: 14px;
-    padding: 18px 20px;
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-}
+        /* ====================================================
+           METRIC CARDS
+        ==================================================== */
 
-.status-title {
-    font-size: 11px;
-    font-weight: 700;
-    color: #64748b;
-    text-transform: uppercase;
-}
+        .metric-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            padding: 21px;
+            min-height: 125px;
+            box-shadow: 0 4px 14px rgba(15,23,42,0.045);
+        }
 
-.status-value {
-    font-size: 20px;
-    font-weight: 800;
-    color: #0f172a;
-    margin-top: 6px;
-}
+        .metric-label {
+            color: #64748b;
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            font-weight: 700;
+        }
 
-/* ---------------- TABS ---------------- */
+        .metric-value {
+            color: #0f172a;
+            font-size: 25px;
+            font-weight: 800;
+            margin-top: 8px;
+            word-break: break-word;
+        }
 
-.stTabs [data-baseweb="tab-list"] {
-    gap: 5px;
-    background: #f1f5f9;
-    padding: 5px;
-    border-radius: 12px;
-}
+        .metric-description {
+            color: #94a3b8;
+            font-size: 11px;
+            margin-top: 5px;
+        }
 
-.stTabs [data-baseweb="tab"] {
-    padding: 10px 17px;
-    border-radius: 9px;
-    font-weight: 600;
-    font-size: 13px;
-    color: #64748b;
-}
+        /* ====================================================
+           INFO CARDS
+        ==================================================== */
 
-.stTabs [aria-selected="true"] {
-    background: white !important;
-    color: #0f172a !important;
-    box-shadow: 0 2px 5px rgba(15,23,42,0.08);
-}
+        .info-card {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 15px;
+            padding: 20px;
+            margin-top: 10px;
+        }
 
-/* ---------------- TABLES ---------------- */
+        .info-title {
+            font-size: 12px;
+            font-weight: 800;
+            color: #334155;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
 
-div[data-testid="stDataFrame"] {
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    overflow: hidden;
-}
+        .info-text {
+            color: #64748b;
+            font-size: 13px;
+            line-height: 1.6;
+            margin-top: 8px;
+        }
 
-/* ---------------- FILE UPLOADER ---------------- */
+        /* ====================================================
+           UPLOAD AREA
+        ==================================================== */
 
-[data-testid="stFileUploader"] {
-    background: #f8fafc;
-    border: 1px dashed #cbd5e1;
-    border-radius: 14px;
-    padding: 8px;
-}
+        [data-testid="stFileUploader"] {
+            background: #f8fafc;
+            border: 1px dashed #cbd5e1;
+            border-radius: 15px;
+            padding: 8px;
+        }
 
-/* ---------------- BUTTON ---------------- */
+        /* ====================================================
+           TABS
+        ==================================================== */
 
-.stDownloadButton button {
-    border-radius: 9px;
-    font-weight: 600;
-}
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 5px;
+            background: #f1f5f9;
+            padding: 5px;
+            border-radius: 13px;
+        }
 
-/* ---------------- DIVIDER ---------------- */
+        .stTabs [data-baseweb="tab"] {
+            padding: 10px 15px;
+            border-radius: 9px;
+            font-size: 12px;
+            font-weight: 700;
+        }
 
-.soft-divider {
-    height: 1px;
-    background: #e2e8f0;
-    margin: 25px 0;
-}
+        .stTabs [aria-selected="true"] {
+            background: white !important;
+            color: #0f172a !important;
+            box-shadow: 0 2px 6px rgba(15,23,42,0.08);
+        }
 
-/* ---------------- FOOTER ---------------- */
+        /* ====================================================
+           DIVIDER
+        ==================================================== */
 
-.app-footer {
-    text-align: center;
-    color: #94a3b8;
-    font-size: 11px;
-    padding-top: 35px;
-}
+        .divider {
+            height: 1px;
+            background: #e2e8f0;
+            margin: 27px 0;
+        }
 
-</style>
-""", unsafe_allow_html=True)
+        /* ====================================================
+           EMPTY STATE
+        ==================================================== */
+
+        .empty-state {
+            text-align: center;
+            padding: 65px 25px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 18px;
+            margin-top: 20px;
+        }
+
+        .empty-icon {
+            font-size: 48px;
+        }
+
+        .empty-title {
+            color: #0f172a;
+            font-size: 21px;
+            font-weight: 800;
+            margin-top: 12px;
+        }
+
+        .empty-description {
+            color: #64748b;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        /* ====================================================
+           FOOTER
+        ==================================================== */
+
+        .footer {
+            text-align: center;
+            color: #94a3b8;
+            font-size: 11px;
+            padding-top: 35px;
+        }
+
+        </style>
+        """
+    ),
+    unsafe_allow_html=True
+)
 
 
 # ============================================================
 # HELPER FUNCTIONS
 # ============================================================
 
-def metric_card(label, value, sub=""):
-    st.markdown(
+def metric_card(label, value, description=""):
+    html = textwrap.dedent(
         f"""
         <div class="metric-card">
             <div class="metric-label">{label}</div>
             <div class="metric-value">{value}</div>
-            <div class="metric-sub">{sub}</div>
+            <div class="metric-description">{description}</div>
         </div>
-        """,
+        """
+    )
+
+    st.markdown(
+        html,
         unsafe_allow_html=True
     )
 
 
-def section_header(title, subtitle=""):
-    st.markdown(
+def section_header(title, description=""):
+    html = textwrap.dedent(
         f"""
         <div class="section-title">{title}</div>
-        <div class="section-sub">{subtitle}</div>
-        """,
+        <div class="section-description">{description}</div>
+        """
+    )
+
+    st.markdown(
+        html,
         unsafe_allow_html=True
     )
 
 
 def format_number(value):
-    if value >= 1_000_000:
+
+    if pd.isna(value):
+        return "N/A"
+
+    value = float(value)
+
+    if abs(value) >= 1_000_000:
         return f"{value / 1_000_000:.1f}M"
-    elif value >= 1_000:
+
+    if abs(value) >= 1_000:
         return f"{value / 1_000:.1f}K"
+
     return f"{value:,.0f}"
+
+
+def safe_mape(actual, predicted):
+
+    actual = np.asarray(actual)
+    predicted = np.asarray(predicted)
+
+    mask = actual != 0
+
+    if mask.sum() == 0:
+        return np.nan
+
+    return np.mean(
+        np.abs(
+            (actual[mask] - predicted[mask])
+            / actual[mask]
+        )
+    ) * 100
 
 
 # ============================================================
@@ -306,56 +429,65 @@ def format_number(value):
 with st.sidebar:
 
     st.markdown(
-        """
-        <div class="sidebar-brand">
-            <div class="sidebar-brand-title">📦 Retail Intelligence</div>
-            <div class="sidebar-brand-sub">
-                Demand Forecasting & Inventory Planning
+        textwrap.dedent(
+            """
+            <div class="sidebar-brand">
+
+                <div class="sidebar-title">
+                    📦 Retail Intelligence
+                </div>
+
+                <div class="sidebar-subtitle">
+                    Demand Forecasting & Inventory Planning
+                </div>
+
             </div>
-        </div>
-        """,
+            """
+        ),
         unsafe_allow_html=True
     )
 
-    st.markdown("---")
+    st.divider()
 
     st.markdown("### Project")
 
     st.markdown(
-        """
-        **Model**  
-        Random Forest
+        textwrap.dedent(
+            """
+            <div class="sidebar-info">
 
-        **Estimators**  
-        200 Trees
+                <div class="sidebar-label">Model</div>
+                <div class="sidebar-value">Random Forest</div>
 
-        **Learning Type**  
-        Supervised ML
+                <div class="sidebar-label">Estimators</div>
+                <div class="sidebar-value">200 Trees</div>
 
-        **Forecast Target**  
-        Future Sales
-        """
+                <div class="sidebar-label">Learning Type</div>
+                <div class="sidebar-value">Supervised ML</div>
+
+                <div class="sidebar-label">Forecast Target</div>
+                <div class="sidebar-value">Future Sales</div>
+
+            </div>
+            """
+        ),
+        unsafe_allow_html=True
     )
 
-    st.markdown("---")
+    st.divider()
 
     st.markdown("### Dashboard")
 
-    st.markdown(
-        """
-        Use the sections on the main dashboard to explore:
-
-        • Forecast performance  
-        • Inventory planning  
-        • Demand spikes  
-        • Business insights  
-        • Next-month forecast
-        """
+    st.caption(
+        "Explore forecast performance, inventory planning, "
+        "demand spikes, business insights and next-month forecasts."
     )
 
-    st.markdown("---")
+    st.divider()
 
-    st.caption("Retail ML Project")
+    st.caption(
+        "Retail Demand Forecasting Project"
+    )
 
 
 # ============================================================
@@ -363,37 +495,52 @@ with st.sidebar:
 # ============================================================
 
 st.markdown(
-    """
-    <div class="hero">
+    textwrap.dedent(
+        """
+        <div class="hero">
 
-        <div class="hero-badge">
-            MACHINE LEARNING • RANDOM FOREST • RETAIL ANALYTICS
+            <div class="hero-circle"></div>
+            <div class="hero-circle-two"></div>
+
+            <div class="hero-content">
+
+                <div class="hero-badge">
+                    MACHINE LEARNING • RANDOM FOREST • RETAIL ANALYTICS
+                </div>
+
+                <div class="hero-title">
+                    Retail Demand Forecasting
+                    <br>
+                    & Inventory Planning
+                </div>
+
+                <div class="hero-description">
+                    Analyze historical retail transactions, forecast future
+                    demand, identify demand patterns, and support inventory
+                    planning through machine learning.
+                </div>
+
+            </div>
+
         </div>
-
-        <div class="hero-title">
-            Retail Demand Forecasting & Inventory Planning
-        </div>
-
-        <div class="hero-sub">
-            Analyze historical retail transactions, forecast future demand,
-            identify demand patterns, and support inventory planning through
-            machine learning.
-        </div>
-
-    </div>
-    """,
+        """
+    ),
     unsafe_allow_html=True
 )
 
 
 # ============================================================
-# DATA UPLOAD
+# FILE UPLOAD
 # ============================================================
 
+st.markdown(
+    "### Upload Retail Dataset"
+)
+
 uploaded_file = st.file_uploader(
-    "Upload Retail Transaction Data",
-    type="csv",
-    help="Upload the retail CSV dataset used by the forecasting system."
+    "Upload your retail transaction CSV",
+    type=["csv"],
+    label_visibility="collapsed"
 )
 
 
@@ -404,38 +551,27 @@ uploaded_file = st.file_uploader(
 if uploaded_file is None:
 
     st.markdown(
-        """
-        <div style="
-            text-align:center;
-            padding:65px 20px;
-            background:#f8fafc;
-            border:1px solid #e2e8f0;
-            border-radius:18px;
-            margin-top:20px;
-        ">
+        textwrap.dedent(
+            """
+            <div class="empty-state">
 
-            <div style="font-size:45px;">📊</div>
+                <div class="empty-icon">
+                    📊
+                </div>
 
-            <div style="
-                font-size:21px;
-                font-weight:750;
-                color:#0f172a;
-                margin-top:12px;
-            ">
-                Ready to Analyze Your Retail Data
+                <div class="empty-title">
+                    Ready to Analyze Your Retail Data
+                </div>
+
+                <div class="empty-description">
+                    Upload your retail transaction CSV above to generate
+                    forecasts, model performance metrics, demand insights,
+                    and inventory recommendations.
+                </div>
+
             </div>
-
-            <div style="
-                color:#64748b;
-                font-size:13px;
-                margin-top:8px;
-            ">
-                Upload your retail transaction CSV above to generate
-                forecasts, insights, and inventory recommendations.
-            </div>
-
-        </div>
-        """,
+            """
+        ),
         unsafe_allow_html=True
     )
 
@@ -452,12 +588,15 @@ try:
 
 except Exception as e:
 
-    st.error(f"Unable to read the uploaded CSV: {e}")
+    st.error(
+        f"Unable to read the uploaded CSV: {e}"
+    )
+
     st.stop()
 
 
 # ============================================================
-# REQUIRED COLUMN VALIDATION
+# COLUMN VALIDATION
 # ============================================================
 
 required_columns = [
@@ -471,37 +610,50 @@ required_columns = [
 ]
 
 missing_columns = [
-    col for col in required_columns
-    if col not in df.columns
+    column
+    for column in required_columns
+    if column not in df.columns
 ]
 
 if missing_columns:
 
     st.error(
-        "The uploaded dataset is missing required columns:"
+        "The uploaded dataset is missing required columns."
     )
 
-    st.write(missing_columns)
+    st.write(
+        missing_columns
+    )
 
     st.stop()
 
 
 # ============================================================
-# DATA PREPARATION
+# DATE PREPARATION
 # ============================================================
 
 try:
 
-    df["Order Date"] = pd.to_datetime(df["Order Date"])
+    df["Order Date"] = pd.to_datetime(
+        df["Order Date"]
+    )
 
 except Exception:
 
-    st.error("The 'Order Date' column could not be converted to a date.")
+    st.error(
+        "The 'Order Date' column could not be converted to a valid date."
+    )
+
     st.stop()
 
 
-df["order_year"] = df["Order Date"].dt.year
-df["order_month"] = df["Order Date"].dt.month
+df["order_year"] = (
+    df["Order Date"].dt.year
+)
+
+df["order_month"] = (
+    df["Order Date"].dt.month
+)
 
 
 # ============================================================
@@ -571,15 +723,23 @@ monthly["sales_growth"] = (
     .pct_change()
 )
 
+# Existing project demand-spike rule:
+# month-over-month growth > 20%
+
 monthly["demand_spike"] = (
     monthly["sales_growth"] > 0.20
 ).astype(int)
 
-monthly.dropna(inplace=True)
+
+# Remove rows without enough historical lag information
+
+monthly.dropna(
+    inplace=True
+)
 
 
 # ============================================================
-# ENCODING
+# ONE-HOT ENCODING
 # ============================================================
 
 monthly_encoded = pd.get_dummies(
@@ -589,17 +749,23 @@ monthly_encoded = pd.get_dummies(
 )
 
 
+# ============================================================
+# FEATURES
+# ============================================================
+
+excluded_columns = [
+    "Sales",
+    "Profit",
+    "Quantity",
+    "Discount",
+    "demand_spike",
+    "sales_growth"
+]
+
 features = [
-    c
-    for c in monthly_encoded.columns
-    if c not in [
-        "Sales",
-        "Profit",
-        "Quantity",
-        "Discount",
-        "demand_spike",
-        "sales_growth"
-    ]
+    column
+    for column in monthly_encoded.columns
+    if column not in excluded_columns
 ]
 
 
@@ -607,7 +773,9 @@ features = [
 # TRAIN / TEST SPLIT
 # ============================================================
 
-latest_year = monthly_encoded["order_year"].max()
+latest_year = int(
+    monthly_encoded["order_year"].max()
+)
 
 train = monthly_encoded[
     monthly_encoded["order_year"] < latest_year
@@ -618,15 +786,27 @@ test = monthly_encoded[
 ]
 
 
+if train.empty or test.empty:
+
+    st.error(
+        "The dataset does not contain enough yearly data "
+        "to create a train/test split."
+    )
+
+    st.stop()
+
+
 X_train = train[features]
+
 y_train = train["Sales"]
 
 X_test = test[features]
+
 y_test = test["Sales"]
 
 
 # ============================================================
-# RANDOM FOREST
+# RANDOM FOREST MODEL
 # ============================================================
 
 rf = RandomForestRegressor(
@@ -639,157 +819,59 @@ rf.fit(
     y_train
 )
 
-pred_sales = rf.predict(X_test)
+
+# ============================================================
+# TEST PREDICTIONS
+# ============================================================
+
+pred_sales = rf.predict(
+    X_test
+)
 
 
 # ============================================================
-# MODEL EVALUATION
+# MODEL METRICS
 # ============================================================
 
 mae = np.mean(
-    np.abs(y_test - pred_sales)
+    np.abs(
+        y_test.values - pred_sales
+    )
 )
 
 rmse = np.sqrt(
     np.mean(
-        (y_test - pred_sales) ** 2
+        (y_test.values - pred_sales) ** 2
     )
 )
 
-# Protect MAPE against zero actual values
-non_zero_mask = y_test != 0
-
-if non_zero_mask.sum() > 0:
-
-    mape = np.mean(
-        np.abs(
-            (
-                y_test[non_zero_mask]
-                - pred_sales[non_zero_mask]
-            )
-            / y_test[non_zero_mask]
-        )
-    ) * 100
-
-else:
-
-    mape = np.nan
-
-
-# ============================================================
-# FUTURE FORECAST
-# ============================================================
-
-category_cols = [
-    c
-    for c in monthly_encoded.columns
-    if c.startswith("Category of Goods_")
-]
-
-
-latest_rows = (
-    monthly_encoded
-    .sort_values(
-        [
-            "order_year",
-            "order_month"
-        ]
-    )
-    .groupby(
-        category_cols,
-        dropna=False
-    )
-    .tail(1)
-    .copy()
-)
-
-
-future_rows = latest_rows.copy()
-
-
-future_rows["order_year"] = latest_rows.apply(
-    lambda r:
-        r["order_year"] + 1
-        if r["order_month"] == 12
-        else r["order_year"],
-    axis=1
-)
-
-future_rows["order_month"] = (
-    latest_rows["order_month"] % 12
-) + 1
-
-
-future_rows["sales_lag_3"] = (
-    latest_rows["sales_lag_2"]
-)
-
-future_rows["sales_lag_2"] = (
-    latest_rows["sales_lag_1"]
-)
-
-future_rows["sales_lag_1"] = (
-    latest_rows["Sales"]
-)
-
-future_rows["rolling_mean_3"] = (
-    latest_rows[
-        [
-            "Sales",
-            "sales_lag_1",
-            "sales_lag_2"
-        ]
-    ].mean(axis=1)
-)
-
-
-future_pred = rf.predict(
-    future_rows[features]
-)
-
-future_rows[
-    "Predicted Next Month Sales"
-] = future_pred
-
-
-def label_category(row):
-
-    for c in category_cols:
-
-        if row[c]:
-
-            return c.replace(
-                "Category of Goods_",
-                ""
-            )
-
-    return "Dairy Products"
-
-
-future_rows["Category"] = (
-    future_rows
-    .apply(label_category, axis=1)
+mape = safe_mape(
+    y_test.values,
+    pred_sales
 )
 
 
 # ============================================================
-# EXECUTIVE KPI STRIP
+# EXECUTIVE OVERVIEW
 # ============================================================
 
-st.markdown(
-    '<div class="section-title">Executive Overview</div>',
-    unsafe_allow_html=True
+section_header(
+    "Executive Overview",
+    "A quick snapshot of the retail dataset and forecasting model"
 )
+
 
 k1, k2, k3, k4 = st.columns(4)
+
 
 with k1:
 
     metric_card(
         "Transactions",
-        f"{df.shape[0]:,}",
+        f"{len(df):,}",
         "records analyzed"
     )
+
 
 with k2:
 
@@ -799,13 +881,15 @@ with k2:
         "product categories"
     )
 
+
 with k3:
 
     metric_card(
-        "MAPE",
+        "Forecast MAPE",
         f"{mape:.2f}%" if not np.isnan(mape) else "N/A",
         "lower is better"
     )
+
 
 with k4:
 
@@ -816,52 +900,66 @@ with k4:
     )
 
 
-# ============================================================
-# DATASET SUMMARY
-# ============================================================
-
 st.markdown(
-    '<div class="soft-divider"></div>',
+    '<div class="divider"></div>',
     unsafe_allow_html=True
 )
 
-summary_cols = st.columns(4)
 
-with summary_cols[0]:
+# ============================================================
+# BUSINESS KPI ROW
+# ============================================================
+
+b1, b2, b3, b4 = st.columns(4)
+
+
+with b1:
 
     metric_card(
         "Total Sales",
-        format_number(df["Sales"].sum()),
+        format_number(
+            df["Sales"].sum()
+        ),
         "historical sales"
     )
 
-with summary_cols[1]:
+
+with b2:
 
     metric_card(
-        "Total Quantity",
-        format_number(df["Quantity"].sum()),
-        "units sold"
+        "Units Sold",
+        format_number(
+            df["Quantity"].sum()
+        ),
+        "total quantity"
     )
 
-with summary_cols[2]:
+
+with b3:
 
     metric_card(
         "Total Profit",
-        format_number(df["Profit"].sum()),
+        format_number(
+            df["Profit"].sum()
+        ),
         "historical profit"
     )
 
-with summary_cols[3]:
+
+with b4:
 
     metric_card(
-        "Latest Year",
-        str(int(latest_year)),
-        "held-out test year"
+        "Test Year",
+        str(latest_year),
+        "most recent year held out"
     )
 
 
+st.write("")
+
+
 # ============================================================
-# NAVIGATION TABS
+# DASHBOARD TABS
 # ============================================================
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(
@@ -876,69 +974,77 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(
 
 
 # ============================================================
-# TAB 1 — FORECAST PERFORMANCE
+# TAB 1
+# FORECAST PERFORMANCE
 # ============================================================
 
 with tab1:
 
     section_header(
-        "Model Performance",
+        "Model Accuracy",
         "Random Forest evaluated on out-of-time test data"
     )
 
+
     c1, c2, c3 = st.columns(3)
+
 
     with c1:
 
         metric_card(
-            "MAE",
+            "Mean Absolute Error",
             f"{mae:,.0f}",
-            "Mean Absolute Error"
+            "MAE • lower is better"
         )
+
 
     with c2:
 
         metric_card(
-            "RMSE",
+            "Root Mean Squared Error",
             f"{rmse:,.0f}",
-            "Root Mean Squared Error"
+            "RMSE • lower is better"
         )
+
 
     with c3:
 
         metric_card(
-            "MAPE",
+            "Mean Absolute Percentage Error",
             f"{mape:.2f}%" if not np.isnan(mape) else "N/A",
-            "Mean Absolute Percentage Error"
+            "MAPE • lower is better"
         )
 
 
     section_header(
         "Actual vs Predicted Sales",
-        "Comparison of model predictions against held-out observations"
+        "Comparison between observed sales and Random Forest predictions"
     )
 
 
     fig, ax = plt.subplots(
-        figsize=(12, 4.5)
+        figsize=(12, 5)
     )
+
 
     ax.plot(
         y_test.values,
-        label="Actual",
-        linewidth=2.3,
+        label="Actual Sales",
+        linewidth=2.2,
         marker="o",
-        markersize=4
+        markersize=3
     )
+
 
     ax.plot(
         pred_sales,
-        label="Predicted",
-        linewidth=2.3,
+        label="Predicted Sales",
+        linewidth=2.2,
         linestyle="--",
         marker="o",
-        markersize=4
+        markersize=3
     )
+
 
     ax.set_xlabel(
         "Test Observation"
@@ -948,38 +1054,48 @@ with tab1:
         "Sales"
     )
 
+
     ax.yaxis.set_major_formatter(
         mticker.FuncFormatter(
             lambda x, _: f"{x:,.0f}"
         )
     )
 
+
     ax.grid(
         axis="y",
         alpha=0.2
     )
 
+
     ax.spines["top"].set_visible(False)
+
     ax.spines["right"].set_visible(False)
+
 
     ax.legend(
         frameon=False
     )
+
 
     st.pyplot(
         fig,
         use_container_width=True
     )
 
+
     plt.close(fig)
 
 
-    # Feature importance
+    # --------------------------------------------------------
+    # FEATURE IMPORTANCE
+    # --------------------------------------------------------
 
     section_header(
         "Feature Importance",
-        "Signals the Random Forest relies on most"
+        "Relative importance of model input features"
     )
+
 
     importance_df = pd.DataFrame(
         {
@@ -988,108 +1104,124 @@ with tab1:
         }
     )
 
+
     importance_df = (
         importance_df
         .sort_values(
             "Importance",
             ascending=False
         )
-        .head(8)
+        .head(10)
     )
 
 
     fig2, ax2 = plt.subplots(
-        figsize=(10, 4.5)
+        figsize=(10, 5)
     )
+
 
     ax2.barh(
         importance_df["Feature"],
         importance_df["Importance"]
     )
 
+
     ax2.invert_yaxis()
+
 
     ax2.set_xlabel(
         "Importance"
     )
 
+
     ax2.spines["top"].set_visible(False)
+
     ax2.spines["right"].set_visible(False)
+
 
     ax2.grid(
         axis="x",
         alpha=0.2
     )
 
+
     st.pyplot(
         fig2,
         use_container_width=True
     )
 
+
     plt.close(fig2)
 
 
 # ============================================================
-# TAB 2 — INVENTORY PLANNING
+# TAB 2
+# INVENTORY PLANNING
 # ============================================================
 
 with tab2:
 
     section_header(
         "Inventory Planning",
-        "Recommended inventory based on predicted sales plus a 15% safety-stock buffer"
+        "Predicted demand plus the project's 15% safety-stock buffer"
     )
 
 
-    results = test[
+    inventory = test[
         [
             "order_year",
             "order_month"
         ]
     ].copy()
 
-    results["Predicted Sales"] = (
+
+    inventory["Predicted Demand"] = (
         pred_sales
     )
 
-    results["Safety Stock"] = (
-        results["Predicted Sales"] * 0.15
-    )
 
-    results["Recommended Inventory"] = (
-        results["Predicted Sales"]
-        + results["Safety Stock"]
+    inventory["Safety Stock"] = (
+        inventory["Predicted Demand"] * 0.15
     )
 
 
-    c1, c2, c3 = st.columns(3)
+    inventory["Recommended Inventory"] = (
+        inventory["Predicted Demand"]
+        + inventory["Safety Stock"]
+    )
 
-    with c1:
+
+    i1, i2, i3 = st.columns(3)
+
+
+    with i1:
 
         metric_card(
-            "Forecasted Demand",
+            "Predicted Demand",
             format_number(
-                results["Predicted Sales"].sum()
+                inventory["Predicted Demand"].sum()
             ),
-            "test-period prediction"
+            "test-period forecast"
         )
 
-    with c2:
+
+    with i2:
 
         metric_card(
             "Safety Stock",
             format_number(
-                results["Safety Stock"].sum()
+                inventory["Safety Stock"].sum()
             ),
             "15% buffer"
         )
 
-    with c3:
+
+    with i3:
 
         metric_card(
             "Recommended Inventory",
             format_number(
-                results["Recommended Inventory"].sum()
+                inventory["Recommended Inventory"].sum()
             ),
             "forecast + safety stock"
         )
@@ -1098,21 +1230,24 @@ with tab2:
     st.write("")
 
 
-    display_results = results.copy()
+    inventory_display = inventory.copy()
 
-    display_results["Period"] = (
-        display_results["order_year"].astype(str)
+
+    inventory_display["Period"] = (
+        inventory_display["order_year"]
+        .astype(str)
         + "-"
-        + display_results["order_month"]
+        + inventory_display["order_month"]
         .astype(int)
         .astype(str)
         .str.zfill(2)
     )
 
-    display_results = display_results[
+
+    inventory_display = inventory_display[
         [
             "Period",
-            "Predicted Sales",
+            "Predicted Demand",
             "Safety Stock",
             "Recommended Inventory"
         ]
@@ -1120,9 +1255,9 @@ with tab2:
 
 
     st.dataframe(
-        display_results.style.format(
+        inventory_display.style.format(
             {
-                "Predicted Sales": "{:,.0f}",
+                "Predicted Demand": "{:,.0f}",
                 "Safety Stock": "{:,.0f}",
                 "Recommended Inventory": "{:,.0f}"
             }
@@ -1132,28 +1267,31 @@ with tab2:
     )
 
 
-    csv_inventory = display_results.to_csv(
-        index=False
-    ).encode("utf-8")
+    inventory_csv = (
+        inventory_display
+        .to_csv(index=False)
+        .encode("utf-8")
+    )
 
 
     st.download_button(
-        label="⬇ Download Inventory Plan",
-        data=csv_inventory,
-        file_name="inventory_recommendations.csv",
-        mime="text/csv"
+        "⬇ Download Inventory Plan",
+        inventory_csv,
+        "inventory_plan.csv",
+        "text/csv"
     )
 
 
 # ============================================================
-# TAB 3 — DEMAND SPIKES
+# TAB 3
+# DEMAND SPIKES
 # ============================================================
 
 with tab3:
 
     section_header(
         "Demand Spike Detection",
-        "A spike is flagged when month-over-month sales growth exceeds 20%"
+        "A spike is detected when month-over-month sales growth exceeds 20%"
     )
 
 
@@ -1162,24 +1300,29 @@ with tab3:
     ]
 
 
+    spike_count = len(spikes)
+
+
     spike_rate = (
-        len(spikes) / len(monthly) * 100
+        spike_count / len(monthly) * 100
         if len(monthly) > 0
         else 0
     )
 
 
-    c1, c2 = st.columns(2)
+    s1, s2 = st.columns(2)
 
-    with c1:
+
+    with s1:
 
         metric_card(
-            "Spike Events",
-            f"{len(spikes):,}",
-            f"out of {len(monthly):,} observations"
+            "Demand Spike Events",
+            f"{spike_count:,}",
+            "detected observations"
         )
 
-    with c2:
+
+    with s2:
 
         metric_card(
             "Spike Rate",
@@ -1190,11 +1333,11 @@ with tab3:
 
     section_header(
         "Demand Spike Distribution",
-        "Monthly observations classified by the rule-based spike detector"
+        "Distribution of observations with and without detected spikes"
     )
 
 
-    counts = (
+    spike_counts = (
         monthly["demand_spike"]
         .value_counts()
         .sort_index()
@@ -1205,20 +1348,33 @@ with tab3:
 
     values = []
 
-    if 0 in counts.index:
 
-        labels.append("No Spike")
-        values.append(counts[0])
+    if 0 in spike_counts.index:
 
-    if 1 in counts.index:
+        labels.append(
+            "No Spike"
+        )
 
-        labels.append("Spike")
-        values.append(counts[1])
+        values.append(
+            spike_counts.loc[0]
+        )
+
+
+    if 1 in spike_counts.index:
+
+        labels.append(
+            "Spike"
+        )
+
+        values.append(
+            spike_counts.loc[1]
+        )
 
 
     fig3, ax3 = plt.subplots(
-        figsize=(8, 4)
+        figsize=(8, 4.5)
     )
+
 
     ax3.bar(
         labels,
@@ -1226,29 +1382,35 @@ with tab3:
         width=0.5
     )
 
+
     ax3.set_ylabel(
-        "Number of Observations"
+        "Observations"
     )
 
+
     ax3.spines["top"].set_visible(False)
+
     ax3.spines["right"].set_visible(False)
+
 
     ax3.grid(
         axis="y",
         alpha=0.2
     )
 
+
     st.pyplot(
         fig3,
         use_container_width=True
     )
+
 
     plt.close(fig3)
 
 
     section_header(
         "Detected Spike Events",
-        "Periods where month-over-month sales growth exceeded 20%"
+        "Monthly observations where sales growth exceeded the 20% threshold"
     )
 
 
@@ -1281,30 +1443,33 @@ with tab3:
 
 
 # ============================================================
-# TAB 4 — BUSINESS INSIGHTS
+# TAB 4
+# BUSINESS INSIGHTS
 # ============================================================
 
 with tab4:
 
     section_header(
         "Business Insights",
-        "High-level patterns extracted from the historical retail data"
+        "Key patterns extracted from the historical retail data"
     )
 
 
-    monthly_avg = (
+    monthly_average = (
         df.groupby("order_month")["Sales"]
         .mean()
     )
 
 
-    best_month = (
-        monthly_avg.idxmax()
+    best_month = int(
+        monthly_average.idxmax()
     )
 
-    weakest_month = (
-        monthly_avg.idxmin()
+
+    weakest_month = int(
+        monthly_average.idxmin()
     )
+
 
     top_category = (
         df.groupby(
@@ -1314,6 +1479,7 @@ with tab4:
         .idxmax()
     )
 
+
     top_region = (
         df.groupby("Region")["Sales"]
         .sum()
@@ -1321,9 +1487,10 @@ with tab4:
     )
 
 
-    c1, c2, c3, c4 = st.columns(4)
+    q1, q2, q3, q4 = st.columns(4)
 
-    with c1:
+
+    with q1:
 
         metric_card(
             "Best Month",
@@ -1331,7 +1498,8 @@ with tab4:
             "highest average sales"
         )
 
-    with c2:
+
+    with q2:
 
         metric_card(
             "Weakest Month",
@@ -1339,7 +1507,8 @@ with tab4:
             "lowest average sales"
         )
 
-    with c3:
+
+    with q3:
 
         metric_card(
             "Top Category",
@@ -1347,7 +1516,8 @@ with tab4:
             "highest total sales"
         )
 
-    with c4:
+
+    with q4:
 
         metric_card(
             "Top Region",
@@ -1358,7 +1528,7 @@ with tab4:
 
     section_header(
         "Sales by Category",
-        "Total historical sales contribution by category"
+        "Historical sales contribution by product category"
     )
 
 
@@ -1374,7 +1544,7 @@ with tab4:
 
 
     fig4, ax4 = plt.subplots(
-        figsize=(10, 5)
+        figsize=(11, 5)
     )
 
 
@@ -1388,113 +1558,247 @@ with tab4:
         "Total Sales"
     )
 
+
     ax4.yaxis.set_major_formatter(
         mticker.FuncFormatter(
             lambda x, _: f"{x:,.0f}"
         )
     )
 
+
     ax4.tick_params(
         axis="x",
         rotation=30
     )
 
+
     ax4.spines["top"].set_visible(False)
+
     ax4.spines["right"].set_visible(False)
+
 
     ax4.grid(
         axis="y",
         alpha=0.2
     )
 
+
     st.pyplot(
         fig4,
         use_container_width=True
     )
 
+
     plt.close(fig4)
 
 
 # ============================================================
-# TAB 5 — NEXT MONTH FORECAST
+# TAB 5
+# NEXT MONTH FORECAST
 # ============================================================
 
 with tab5:
 
     section_header(
-        "Next Month Sales Forecast",
-        "Predicted category-level sales using the most recent known trend"
+        "Next Month Forecast",
+        "Category-level forecast generated using the trained Random Forest model"
     )
 
 
-    forecast_display = future_rows[
-        [
-            "Category",
-            "order_year",
-            "order_month",
-            "Predicted Next Month Sales"
-        ]
-    ].copy()
+    # --------------------------------------------------------
+    # Get latest row for each category
+    # --------------------------------------------------------
+
+    category_column = "Category of Goods"
+
+    latest_category_rows = (
+        monthly
+        .sort_values(
+            [
+                category_column,
+                "order_year",
+                "order_month"
+            ]
+        )
+        .groupby(
+            category_column
+        )
+        .tail(1)
+        .copy()
+    )
 
 
-    forecast_display[
+    # --------------------------------------------------------
+    # Prepare future features
+    # --------------------------------------------------------
+
+    future_base = latest_category_rows.copy()
+
+
+    future_base["order_year"] = np.where(
+        future_base["order_month"] == 12,
+        future_base["order_year"] + 1,
+        future_base["order_year"]
+    )
+
+
+    future_base["order_month"] = (
+        future_base["order_month"] % 12
+    ) + 1
+
+
+    future_base["sales_lag_3"] = (
+        future_base["sales_lag_2"]
+    )
+
+
+    future_base["sales_lag_2"] = (
+        future_base["sales_lag_1"]
+    )
+
+
+    future_base["sales_lag_1"] = (
+        future_base["Sales"]
+    )
+
+
+    future_base["rolling_mean_3"] = (
+        future_base[
+            [
+                "Sales",
+                "sales_lag_1",
+                "sales_lag_2"
+            ]
+        ].mean(axis=1)
+    )
+
+
+    # --------------------------------------------------------
+    # Encode future category data
+    # --------------------------------------------------------
+
+    future_encoded = pd.get_dummies(
+        future_base,
+        columns=[
+            "Category of Goods"
+        ],
+        drop_first=True
+    )
+
+
+    # Add any missing training columns
+
+    for column in features:
+
+        if column not in future_encoded.columns:
+
+            future_encoded[column] = 0
+
+
+    # Keep only model features
+
+    future_X = future_encoded[
+        features
+    ]
+
+
+    # --------------------------------------------------------
+    # Forecast
+    # --------------------------------------------------------
+
+    future_predictions = rf.predict(
+        future_X
+    )
+
+
+    future_base[
+        "Predicted Next Month Sales"
+    ] = future_predictions
+
+
+    # --------------------------------------------------------
+    # Inventory recommendation
+    # --------------------------------------------------------
+
+    future_base[
         "Recommended Inventory"
     ] = (
-        forecast_display[
+        future_base[
             "Predicted Next Month Sales"
         ] * 1.15
     )
 
 
-    forecast_display = (
-        forecast_display
-        .rename(
-            columns={
-                "order_year": "Year",
-                "order_month": "Month"
-            }
-        )
-    )
-
+    # --------------------------------------------------------
+    # Forecast KPIs
+    # --------------------------------------------------------
 
     total_forecast = (
-        forecast_display[
+        future_base[
             "Predicted Next Month Sales"
         ].sum()
     )
 
 
-    total_inventory = (
-        forecast_display[
+    total_recommended_inventory = (
+        future_base[
             "Recommended Inventory"
         ].sum()
     )
 
 
-    c1, c2 = st.columns(2)
+    f1, f2 = st.columns(2)
 
-    with c1:
+
+    with f1:
 
         metric_card(
             "Next Month Forecast",
             format_number(
                 total_forecast
             ),
-            "predicted category sales"
+            "predicted sales"
         )
 
-    with c2:
+
+    with f2:
 
         metric_card(
             "Recommended Inventory",
             format_number(
-                total_inventory
+                total_recommended_inventory
             ),
             "forecast + 15% buffer"
         )
 
 
-    st.write("")
+    section_header(
+        "Category Forecast",
+        "Predicted sales and recommended inventory for the upcoming month"
+    )
+
+
+    forecast_display = future_base[
+        [
+            "Category of Goods",
+            "order_year",
+            "order_month",
+            "Predicted Next Month Sales",
+            "Recommended Inventory"
+        ]
+    ].copy()
+
+
+    forecast_display = (
+        forecast_display
+        .rename(
+            columns={
+                "Category of Goods": "Category",
+                "order_year": "Year",
+                "order_month": "Month"
+            }
+        )
+    )
 
 
     st.dataframe(
@@ -1509,24 +1813,24 @@ with tab5:
     )
 
 
-    csv_forecast = forecast_display.to_csv(
-        index=False
-    ).encode("utf-8")
+    forecast_csv = (
+        forecast_display
+        .to_csv(index=False)
+        .encode("utf-8")
+    )
 
 
     st.download_button(
-        label="⬇ Download Next Month Forecast",
-        data=csv_forecast,
-        file_name="next_month_forecast.csv",
-        mime="text/csv"
+        "⬇ Download Next Month Forecast",
+        forecast_csv,
+        "next_month_forecast.csv",
+        "text/csv"
     )
 
 
-    section_header(
-        "Category Forecast",
-        "Expected sales for the upcoming month"
-    )
-
+    # --------------------------------------------------------
+    # Forecast chart
+    # --------------------------------------------------------
 
     chart_data = (
         forecast_display
@@ -1554,29 +1858,36 @@ with tab5:
         "Predicted Sales"
     )
 
+
     ax5.yaxis.set_major_formatter(
         mticker.FuncFormatter(
             lambda x, _: f"{x:,.0f}"
         )
     )
 
+
     ax5.tick_params(
         axis="x",
         rotation=30
     )
 
+
     ax5.spines["top"].set_visible(False)
+
     ax5.spines["right"].set_visible(False)
+
 
     ax5.grid(
         axis="y",
         alpha=0.2
     )
 
+
     st.pyplot(
         fig5,
         use_container_width=True
     )
+
 
     plt.close(fig5)
 
@@ -1586,11 +1897,16 @@ with tab5:
 # ============================================================
 
 st.markdown(
-    """
-    <div class="app-footer">
-        Retail Demand Forecasting & Inventory Planning
-        • Random Forest • 200 Estimators
-    </div>
-    """,
+    textwrap.dedent(
+        """
+        <div class="footer">
+            Retail Demand Forecasting & Inventory Planning
+            &nbsp;•&nbsp;
+            Random Forest
+            &nbsp;•&nbsp;
+            200 Estimators
+        </div>
+        """
+    ),
     unsafe_allow_html=True
 )
