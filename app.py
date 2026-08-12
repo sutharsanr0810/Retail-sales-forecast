@@ -32,14 +32,68 @@ p,label,li { color:#d6d6d6 !important; }
 [data-testid="stDataFrame"] { border:1px solid #303030 !important; border-radius:7px !important; background:#050505 !important; }
 [data-testid="stFileUploader"] { background:#050505 !important; border:1px solid #333 !important; border-radius:7px !important; }
 [data-testid="stFileUploader"] * { color:#fff !important; }
-button { background:#fff !important; color:#000 !important; border:1px solid #fff !important; border-radius:5px !important; font-weight:700 !important; }
-button:hover { background:#ddd !important; }
+/* Main action buttons */
+.stButton > button, .stDownloadButton > button {
+    background:#fff !important;
+    color:#000 !important;
+    border:1px solid #fff !important;
+    border-radius:5px !important;
+    font-weight:700 !important;
+}
+.stButton > button:hover, .stDownloadButton > button:hover {
+    background:#ddd !important;
+}
+
+/* Keep Streamlit input controls black instead of white */
+[data-testid="stFileUploader"] button,
+[data-testid="stFileUploader"] [role="button"] {
+    background:#080808 !important;
+    color:#fff !important;
+    border-color:#444 !important;
+}
+[data-testid="stFileUploader"] svg {
+    color:#bdbdbd !important;
+    fill:none !important;
+    stroke:#bdbdbd !important;
+}
+div[data-baseweb="select"] > div,
+div[data-baseweb="select"] [role="button"],
+div[data-baseweb="select"] button {
+    background:#080808 !important;
+    color:#fff !important;
+    border-color:#444 !important;
+}
+div[data-baseweb="select"] svg {
+    color:#fff !important;
+    fill:#fff !important;
+    stroke:#fff !important;
+}
+[data-testid="stNumberInput"] button {
+    background:#080808 !important;
+    color:#fff !important;
+    border:1px solid #444 !important;
+}
+[data-testid="stNumberInput"] button:hover {
+    background:#181818 !important;
+}
+
 input,textarea { background:#080808 !important; color:#fff !important; border:1px solid #444 !important; }
 div[data-baseweb="select"] > div { background:#080808 !important; color:#fff !important; border-color:#444 !important; }
 div[data-baseweb="select"] * { color:#fff !important; }
 [data-testid="stAlert"] { background:#101010 !important; border:1px solid #333 !important; color:#fff !important; }
 [data-testid="stAlert"] * { color:#fff !important; }
 hr { border-color:#252525 !important; }
+.dark-toggle {
+    background:#080808;
+    color:#fff;
+    border:1px solid #444;
+    border-radius:7px;
+    padding:.45rem .7rem;
+    text-align:center;
+    font-size:.78rem;
+    font-weight:700;
+    white-space:nowrap;
+}
 .sidebar-title { font-size:1.15rem; font-weight:800; color:#fff; line-height:1.1; }
 .sidebar-sub { font-size:.72rem; color:#aaa; line-height:1.35; margin-top:.3rem; }
 .section-label { font-size:.68rem; letter-spacing:.12em; font-weight:800; color:#999; margin:.65rem 0 .45rem; }
@@ -275,7 +329,7 @@ st.sidebar.markdown(f"<div class='sidebar-sub'><b>Total Records</b><span style='
 
 top_left, top_right = st.columns([10, 1])
 with top_right:
-    st.button("☾  Dark Mode", width="stretch")
+    st.markdown("<div class='dark-toggle'>☾  Dark Mode</div>", unsafe_allow_html=True)
 
 tabs = st.tabs([
     "🏠 Dashboard",
