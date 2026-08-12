@@ -41,10 +41,9 @@ with st.sidebar:
 
     st.subheader("Dashboard")
     st.write(
-        "Use the sections on the dashboard to explore "
-        "forecast performance, inventory planning, "
-        "demand spikes, business insights and "
-        "next-month forecasts."
+        "Explore forecast performance, inventory planning, "
+        "demand spikes, business insights and the 12-month "
+        "sales forecast."
     )
 
     st.divider()
@@ -326,7 +325,7 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(
         "📦 Inventory Planning",
         "🚨 Demand Spikes",
         "💡 Business Insights",
-        "🔮 Next Month Forecast"
+        "🔮 12-Month Forecast"
     ]
 )
 
@@ -439,7 +438,7 @@ with tab2:
 
     st.caption(
         "Inventory recommendation based on predicted demand "
-        "with the project's 15% safety-stock buffer."
+        "with a 15% safety-stock buffer."
     )
 
     inventory = test[
@@ -764,196 +763,302 @@ with tab4:
     )
 
 with tab5:
-    st.header("Next Month Forecast")
+    st.header("12-Month Sales Forecast")
 
     st.caption(
-        "Category-level forecast generated using the trained "
-        "Random Forest model."
+        "Recursive category-level forecast for the next 12 months "
+        "using the trained Random Forest model."
     )
 
-    latest_category_rows = (
-        monthly
+    categories = (
+        monthly["Category of Goods"]
+        .dropna()
+        .unique()
+        .tolist()
+    )
+
+    category_histories = {}
+
+    for category in categories:
+        category_data = (
+            monthly[
+                monthly["Category of Goods"] == category
+            ]
+            .sort_values(
+                [
+                    "order_year",
+                    "order_month"
+                ]
+            )
+            .copy()
+        )
+
+        category_histories[category] = (
+            category_data["Sales"]
+            .tolist()
+        )
+
+    last_date = pd.Timestamp(
+        year=latest_year,
+        month=int(
+            monthly[
+                monthly["order_year"] == latest_year
+            ]["order_month"].max()
+        ),
+        day=1
+    )
+
+    forecast_rows = []
+
+    for forecast_step in range(1, 13):
+
+        forecast_date = (
+            last_date
+            +
+            pd.DateOffset(
+                months=forecast_step
+            )
+        )
+
+        for category in categories:
+
+            history = category_histories[category]
+
+            if len(history) < 3:
+                continue
+
+            lag_1 = history[-1]
+            lag_2 = history[-2]
+            lag_3 = history[-3]
+
+            rolling_mean_3 = np.mean(
+                history[-3:]
+            )
+
+            previous_growth = 0
+
+            if len(history) >= 2 and history[-2] != 0:
+                previous_growth = (
+                    history[-1] - history[-2]
+                ) / history[-2]
+
+            row = {
+                "order_year": forecast_date.year,
+                "order_month": forecast_date.month,
+                "sales_lag_1": lag_1,
+                "sales_lag_2": lag_2,
+                "sales_lag_3": lag_3,
+                "rolling_mean_3": rolling_mean_3
+            }
+
+            category_columns = [
+                column
+                for column in features
+                if column.startswith(
+                    "Category of Goods_"
+                )
+            ]
+
+            for column in category_columns:
+                row[column] = 0
+
+            category_feature = (
+                "Category of Goods_"
+                + str(category)
+            )
+
+            if category_feature in row:
+                row[category_feature] = 1
+
+            future_row = pd.DataFrame(
+                [row]
+            )
+
+            for feature in features:
+                if feature not in future_row.columns:
+                    future_row[feature] = 0
+
+            future_row = future_row[
+                features
+            ]
+
+            prediction = model.predict(
+                future_row
+            )[0]
+
+            prediction = max(
+                0,
+                prediction
+            )
+
+            safety_stock = (
+                prediction * 0.15
+            )
+
+            recommended_inventory = (
+                prediction
+                +
+                safety_stock
+            )
+
+            forecast_rows.append(
+                {
+                    "Month": forecast_date.strftime(
+                        "%b %Y"
+                    ),
+                    "Year": forecast_date.year,
+                    "Month Number": forecast_date.month,
+                    "Category": category,
+                    "Predicted Sales": prediction,
+                    "Safety Stock": safety_stock,
+                    "Recommended Inventory": recommended_inventory
+                }
+            )
+
+            history.append(
+                prediction
+            )
+
+    forecast_df = pd.DataFrame(
+        forecast_rows
+    )
+
+    if forecast_df.empty:
+        st.warning(
+            "Unable to generate the 12-month forecast. "
+            "Make sure each category has enough historical data."
+        )
+        st.stop()
+
+    monthly_forecast = (
+        forecast_df
+        .groupby(
+            [
+                "Year",
+                "Month Number",
+                "Month"
+            ],
+            as_index=False
+        )
+        .agg(
+            {
+                "Predicted Sales": "sum",
+                "Safety Stock": "sum",
+                "Recommended Inventory": "sum"
+            }
+        )
         .sort_values(
             [
-                "Category of Goods",
-                "order_year",
-                "order_month"
+                "Year",
+                "Month Number"
             ]
         )
-        .groupby(
-            "Category of Goods"
-        )
-        .tail(1)
-        .copy()
     )
 
-    future_base = (
-        latest_category_rows
-        .copy()
-    )
-
-    previous_month = (
-        latest_category_rows["order_month"]
-        .values
-    )
-
-    previous_year = (
-        latest_category_rows["order_year"]
-        .values
-    )
-
-    future_base["order_month"] = (
-        previous_month % 12
-    ) + 1
-
-    future_base["order_year"] = np.where(
-        previous_month == 12,
-        previous_year + 1,
-        previous_year
-    )
-
-    future_base["sales_lag_3"] = (
-        future_base["sales_lag_2"]
-    )
-
-    future_base["sales_lag_2"] = (
-        future_base["sales_lag_1"]
-    )
-
-    future_base["sales_lag_1"] = (
-        future_base["Sales"]
-    )
-
-    future_base["rolling_mean_3"] = (
-        future_base[
-            [
-                "Sales",
-                "sales_lag_1",
-                "sales_lag_2"
-            ]
-        ].mean(axis=1)
-    )
-
-    future_encoded = pd.get_dummies(
-        future_base,
-        columns=["Category of Goods"],
-        drop_first=True
-    )
-
-    for column in features:
-        if column not in future_encoded.columns:
-            future_encoded[column] = 0
-
-    future_X = future_encoded[
-        features
-    ]
-
-    future_predictions = model.predict(
-        future_X
-    )
-
-    future_base[
-        "Predicted Next Month Sales"
-    ] = future_predictions
-
-    future_base[
-        "Recommended Inventory"
-    ] = (
-        future_base[
-            "Predicted Next Month Sales"
-        ]
-        * 1.15
-    )
-
-    total_forecast = (
-        future_base[
-            "Predicted Next Month Sales"
+    total_12_month_sales = (
+        monthly_forecast[
+            "Predicted Sales"
         ].sum()
     )
 
-    total_inventory = (
-        future_base[
+    total_12_month_inventory = (
+        monthly_forecast[
             "Recommended Inventory"
         ].sum()
     )
 
-    c1, c2 = st.columns(2)
+    average_monthly_sales = (
+        monthly_forecast[
+            "Predicted Sales"
+        ].mean()
+    )
+
+    peak_month_index = (
+        monthly_forecast[
+            "Predicted Sales"
+        ].idxmax()
+    )
+
+    peak_month = (
+        monthly_forecast
+        .loc[
+            peak_month_index,
+            "Month"
+        ]
+    )
+
+    c1, c2, c3, c4 = st.columns(4)
 
     with c1:
         st.metric(
-            "Next Month Forecast",
-            f"{total_forecast:,.0f}"
+            "12-Month Forecast",
+            f"{total_12_month_sales:,.0f}"
         )
 
     with c2:
         st.metric(
-            "Recommended Inventory",
-            f"{total_inventory:,.0f}"
+            "Average Monthly Sales",
+            f"{average_monthly_sales:,.0f}"
         )
 
-    st.subheader("Category Forecast")
+    with c3:
+        st.metric(
+            "12-Month Inventory",
+            f"{total_12_month_inventory:,.0f}"
+        )
 
-    forecast_display = future_base[
+    with c4:
+        st.metric(
+            "Peak Forecast Month",
+            peak_month
+        )
+
+    st.subheader("Monthly Forecast")
+
+    monthly_display = monthly_forecast[
         [
-            "Category of Goods",
-            "order_year",
-            "order_month",
-            "Predicted Next Month Sales",
+            "Month",
+            "Predicted Sales",
+            "Safety Stock",
             "Recommended Inventory"
         ]
     ].copy()
 
-    forecast_display.columns = [
-        "Category",
-        "Year",
-        "Month",
-        "Predicted Sales",
-        "Recommended Inventory"
-    ]
-
     st.dataframe(
-        forecast_display,
+        monthly_display,
         use_container_width=True,
         hide_index=True
     )
 
     st.download_button(
-        label="⬇ Download Next Month Forecast",
-        data=forecast_display.to_csv(
+        label="⬇ Download 12-Month Forecast",
+        data=monthly_display.to_csv(
             index=False
         ).encode("utf-8"),
-        file_name="next_month_forecast.csv",
+        file_name="12_month_forecast.csv",
         mime="text/csv"
     )
 
-    st.subheader(
-        "Predicted Sales by Category"
-    )
-
-    chart_data = (
-        forecast_display
-        .sort_values(
-            "Predicted Sales",
-            ascending=False
-        )
-    )
+    st.subheader("12-Month Sales Trend")
 
     fig, ax = plt.subplots(
-        figsize=(11, 5)
+        figsize=(12, 5)
     )
 
-    ax.bar(
-        chart_data["Category"],
-        chart_data["Predicted Sales"]
+    ax.plot(
+        monthly_forecast["Month"],
+        monthly_forecast["Predicted Sales"],
+        marker="o",
+        linewidth=2
     )
 
-    ax.set_xlabel("Category")
+    ax.set_xlabel("Forecast Month")
     ax.set_ylabel("Predicted Sales")
-    ax.set_title("Next Month Sales Forecast")
+    ax.set_title("Next 12 Months Sales Forecast")
 
     ax.tick_params(
         axis="x",
-        rotation=30
+        rotation=35
     )
 
     ax.grid(
@@ -967,6 +1072,25 @@ with tab5:
     )
 
     plt.close(fig)
+
+    st.subheader("Category-Level 12-Month Forecast")
+
+    category_pivot = (
+        forecast_df
+        .pivot_table(
+            index="Month",
+            columns="Category",
+            values="Predicted Sales",
+            aggfunc="sum"
+        )
+        .reset_index()
+    )
+
+    st.dataframe(
+        category_pivot,
+        use_container_width=True,
+        hide_index=True
+    )
 
 st.divider()
 
