@@ -13,11 +13,101 @@ st.set_page_config(
 
 st.markdown("""
 <style>
-.stApp{background:#f7f8fc;color:#1f2937}
-[data-testid="stSidebar"]{background:#fff;border-right:1px solid #e5e7eb}
-[data-testid="stSidebar"] *{color:#1f2937!important}
-h1,h2,h3{color:#111827!important}
-[data-testid="stMetric"]{background:#fff;border:1px solid #e5e7eb;border-radius:12px;padding:15px}
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
+    background: #000000;
+    color: #ffffff;
+}
+[data-testid="stSidebar"] {
+    background: #050505;
+    border-right: 1px solid #333333;
+}
+[data-testid="stSidebar"] * {
+    color: #ffffff !important;
+}
+h1, h2, h3, h4, h5, h6 {
+    color: #ffffff !important;
+}
+p, label, li {
+    color: #d8d8d8;
+}
+span {
+    color: inherit;
+}
+[data-testid="stMetric"] {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 16px;
+}
+[data-testid="stMetricLabel"] {
+    color: #bdbdbd !important;
+}
+[data-testid="stMetricValue"] {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+.stTabs [data-baseweb="tab-list"] {
+    background: #080808;
+    border-bottom: 1px solid #333333;
+}
+.stTabs [data-baseweb="tab"] {
+    color: #aaaaaa !important;
+    background: #080808;
+}
+.stTabs [aria-selected="true"] {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+[data-testid="stDataFrame"] {
+    background: #111111;
+    border: 1px solid #333333;
+}
+[data-testid="stDataFrame"] * {
+    color: #ffffff !important;
+}
+[data-testid="stFileUploader"] {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 10px;
+}
+[data-testid="stFileUploader"] * {
+    color: #ffffff !important;
+}
+button {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border: 1px solid #555555 !important;
+}
+button:hover {
+    background: #222222 !important;
+    border-color: #ffffff !important;
+}
+input, textarea {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+div[data-baseweb="select"] > div {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border-color: #444444 !important;
+}
+div[data-baseweb="select"] * {
+    color: #ffffff !important;
+}
+[data-testid="stAlert"] {
+    background: #111111;
+    border: 1px solid #444444;
+}
+[data-testid="stAlert"] * {
+    color: #ffffff !important;
+}
+hr {
+    border-color: #333333;
+}
+small {
+    color: #999999 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
