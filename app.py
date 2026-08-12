@@ -1,5 +1,3 @@
-import textwrap
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -10,7 +8,7 @@ from sklearn.ensemble import RandomForestRegressor
 
 
 # ============================================================
-# PAGE CONFIGURATION
+# PAGE CONFIG
 # ============================================================
 
 st.set_page_config(
@@ -25,332 +23,108 @@ st.set_page_config(
 # CUSTOM CSS
 # ============================================================
 
-st.markdown(
-    textwrap.dedent(
-        """
-        <style>
+st.markdown("""
+<style>
 
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+    .stApp {
+        background-color: #f8fafc;
+    }
 
-        html, body, [class*="css"] {
-            font-family: 'Inter', sans-serif;
-        }
+    [data-testid="stSidebar"] {
+        background-color: #0f172a;
+    }
 
-        #MainMenu {
-            visibility: hidden;
-        }
+    [data-testid="stSidebar"] * {
+        color: #e2e8f0;
+    }
 
-        footer {
-            visibility: hidden;
-        }
+    .hero {
+        padding: 35px;
+        border-radius: 20px;
+        background: linear-gradient(
+            135deg,
+            #0f172a,
+            #172554,
+            #1d4ed8
+        );
+        margin-bottom: 25px;
+    }
 
-        header {
-            visibility: hidden;
-        }
+    .hero-badge {
+        color: #bfdbfe;
+        font-size: 12px;
+        font-weight: 700;
+        letter-spacing: 1px;
+        margin-bottom: 12px;
+    }
 
-        .block-container {
-            max-width: 1450px;
-            padding-top: 1.5rem;
-            padding-bottom: 3rem;
-        }
+    .hero-title {
+        color: white;
+        font-size: 34px;
+        font-weight: 800;
+        line-height: 1.2;
+    }
 
-        /* ====================================================
-           SIDEBAR
-        ==================================================== */
+    .hero-text {
+        color: #cbd5e1;
+        font-size: 14px;
+        line-height: 1.6;
+        max-width: 850px;
+        margin-top: 12px;
+    }
 
-        section[data-testid="stSidebar"] {
-            background: #0f172a;
-        }
+    .section-title {
+        font-size: 22px;
+        font-weight: 800;
+        color: #0f172a;
+        margin-top: 25px;
+    }
 
-        section[data-testid="stSidebar"] * {
-            color: #e2e8f0;
-        }
+    .section-text {
+        color: #64748b;
+        font-size: 13px;
+        margin-bottom: 15px;
+    }
 
-        .sidebar-brand {
-            padding: 10px 0 20px 0;
-        }
+    .metric-box {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 18px;
+        min-height: 115px;
+        box-shadow: 0 3px 12px rgba(15, 23, 42, 0.05);
+    }
 
-        .sidebar-title {
-            font-size: 21px;
-            font-weight: 800;
-            color: #ffffff;
-        }
+    .metric-label {
+        color: #64748b;
+        font-size: 11px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.7px;
+    }
 
-        .sidebar-subtitle {
-            font-size: 12px;
-            color: #94a3b8;
-            margin-top: 5px;
-        }
+    .metric-value {
+        color: #0f172a;
+        font-size: 25px;
+        font-weight: 800;
+        margin-top: 7px;
+    }
 
-        .sidebar-info {
-            background: rgba(255,255,255,0.04);
-            border: 1px solid rgba(255,255,255,0.08);
-            border-radius: 12px;
-            padding: 14px;
-            margin-top: 10px;
-        }
+    .metric-sub {
+        color: #94a3b8;
+        font-size: 11px;
+        margin-top: 5px;
+    }
 
-        .sidebar-label {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.7px;
-            color: #94a3b8;
-            font-weight: 700;
-        }
+    .info-box {
+        background: white;
+        border: 1px solid #e2e8f0;
+        border-radius: 15px;
+        padding: 20px;
+    }
 
-        .sidebar-value {
-            font-size: 14px;
-            color: white;
-            font-weight: 600;
-            margin-top: 3px;
-            margin-bottom: 12px;
-        }
-
-        /* ====================================================
-           HERO
-        ==================================================== */
-
-        .hero {
-            background: linear-gradient(
-                135deg,
-                #0f172a 0%,
-                #172554 55%,
-                #1d4ed8 100%
-            );
-
-            border-radius: 22px;
-            padding: 42px;
-            margin-bottom: 25px;
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-circle {
-            position: absolute;
-            width: 330px;
-            height: 330px;
-            right: -110px;
-            top: -160px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.06);
-        }
-
-        .hero-circle-two {
-            position: absolute;
-            width: 200px;
-            height: 200px;
-            right: 80px;
-            bottom: -150px;
-            border-radius: 50%;
-            background: rgba(255,255,255,0.04);
-        }
-
-        .hero-content {
-            position: relative;
-            z-index: 2;
-        }
-
-        .hero-badge {
-            display: inline-block;
-            padding: 7px 13px;
-            border-radius: 30px;
-            background: rgba(147,197,253,0.12);
-            border: 1px solid rgba(147,197,253,0.25);
-            color: #bfdbfe;
-            font-size: 10px;
-            font-weight: 700;
-            letter-spacing: 0.8px;
-            margin-bottom: 15px;
-        }
-
-        .hero-title {
-            font-size: 34px;
-            line-height: 1.15;
-            font-weight: 800;
-            letter-spacing: -1px;
-            color: white;
-        }
-
-        .hero-description {
-            margin-top: 12px;
-            max-width: 850px;
-            font-size: 14px;
-            line-height: 1.65;
-            color: #cbd5e1;
-        }
-
-        /* ====================================================
-           SECTION HEADERS
-        ==================================================== */
-
-        .section-title {
-            font-size: 20px;
-            font-weight: 800;
-            color: #0f172a;
-            margin-top: 28px;
-            margin-bottom: 4px;
-        }
-
-        .section-description {
-            color: #64748b;
-            font-size: 13px;
-            margin-bottom: 17px;
-        }
-
-        /* ====================================================
-           METRIC CARDS
-        ==================================================== */
-
-        .metric-card {
-            background: #ffffff;
-            border: 1px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 21px;
-            min-height: 125px;
-            box-shadow: 0 4px 14px rgba(15,23,42,0.045);
-        }
-
-        .metric-label {
-            color: #64748b;
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            font-weight: 700;
-        }
-
-        .metric-value {
-            color: #0f172a;
-            font-size: 25px;
-            font-weight: 800;
-            margin-top: 8px;
-            word-break: break-word;
-        }
-
-        .metric-description {
-            color: #94a3b8;
-            font-size: 11px;
-            margin-top: 5px;
-        }
-
-        /* ====================================================
-           INFO CARDS
-        ==================================================== */
-
-        .info-card {
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 15px;
-            padding: 20px;
-            margin-top: 10px;
-        }
-
-        .info-title {
-            font-size: 12px;
-            font-weight: 800;
-            color: #334155;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .info-text {
-            color: #64748b;
-            font-size: 13px;
-            line-height: 1.6;
-            margin-top: 8px;
-        }
-
-        /* ====================================================
-           UPLOAD AREA
-        ==================================================== */
-
-        [data-testid="stFileUploader"] {
-            background: #f8fafc;
-            border: 1px dashed #cbd5e1;
-            border-radius: 15px;
-            padding: 8px;
-        }
-
-        /* ====================================================
-           TABS
-        ==================================================== */
-
-        .stTabs [data-baseweb="tab-list"] {
-            gap: 5px;
-            background: #f1f5f9;
-            padding: 5px;
-            border-radius: 13px;
-        }
-
-        .stTabs [data-baseweb="tab"] {
-            padding: 10px 15px;
-            border-radius: 9px;
-            font-size: 12px;
-            font-weight: 700;
-        }
-
-        .stTabs [aria-selected="true"] {
-            background: white !important;
-            color: #0f172a !important;
-            box-shadow: 0 2px 6px rgba(15,23,42,0.08);
-        }
-
-        /* ====================================================
-           DIVIDER
-        ==================================================== */
-
-        .divider {
-            height: 1px;
-            background: #e2e8f0;
-            margin: 27px 0;
-        }
-
-        /* ====================================================
-           EMPTY STATE
-        ==================================================== */
-
-        .empty-state {
-            text-align: center;
-            padding: 65px 25px;
-            background: #f8fafc;
-            border: 1px solid #e2e8f0;
-            border-radius: 18px;
-            margin-top: 20px;
-        }
-
-        .empty-icon {
-            font-size: 48px;
-        }
-
-        .empty-title {
-            color: #0f172a;
-            font-size: 21px;
-            font-weight: 800;
-            margin-top: 12px;
-        }
-
-        .empty-description {
-            color: #64748b;
-            font-size: 13px;
-            margin-top: 8px;
-        }
-
-        /* ====================================================
-           FOOTER
-        ==================================================== */
-
-        .footer {
-            text-align: center;
-            color: #94a3b8;
-            font-size: 11px;
-            padding-top: 35px;
-        }
-
-        </style>
-        """
-    ),
-    unsafe_allow_html=True
-)
+</style>
+""", unsafe_allow_html=True)
 
 
 # ============================================================
@@ -358,32 +132,15 @@ st.markdown(
 # ============================================================
 
 def metric_card(label, value, description=""):
-    html = textwrap.dedent(
+
+    st.markdown(
         f"""
-        <div class="metric-card">
+        <div class="metric-box">
             <div class="metric-label">{label}</div>
             <div class="metric-value">{value}</div>
-            <div class="metric-description">{description}</div>
+            <div class="metric-sub">{description}</div>
         </div>
-        """
-    )
-
-    st.markdown(
-        html,
-        unsafe_allow_html=True
-    )
-
-
-def section_header(title, description=""):
-    html = textwrap.dedent(
-        f"""
-        <div class="section-title">{title}</div>
-        <div class="section-description">{description}</div>
-        """
-    )
-
-    st.markdown(
-        html,
+        """,
         unsafe_allow_html=True
     )
 
@@ -404,7 +161,7 @@ def format_number(value):
     return f"{value:,.0f}"
 
 
-def safe_mape(actual, predicted):
+def calculate_mape(actual, predicted):
 
     actual = np.asarray(actual)
     predicted = np.asarray(predicted)
@@ -428,59 +185,37 @@ def safe_mape(actual, predicted):
 
 with st.sidebar:
 
-    st.markdown(
-        textwrap.dedent(
-            """
-            <div class="sidebar-brand">
-
-                <div class="sidebar-title">
-                    📦 Retail Intelligence
-                </div>
-
-                <div class="sidebar-subtitle">
-                    Demand Forecasting & Inventory Planning
-                </div>
-
-            </div>
-            """
-        ),
-        unsafe_allow_html=True
-    )
-
-    st.divider()
-
-    st.markdown("### Project")
-
-    st.markdown(
-        textwrap.dedent(
-            """
-            <div class="sidebar-info">
-
-                <div class="sidebar-label">Model</div>
-                <div class="sidebar-value">Random Forest</div>
-
-                <div class="sidebar-label">Estimators</div>
-                <div class="sidebar-value">200 Trees</div>
-
-                <div class="sidebar-label">Learning Type</div>
-                <div class="sidebar-value">Supervised ML</div>
-
-                <div class="sidebar-label">Forecast Target</div>
-                <div class="sidebar-value">Future Sales</div>
-
-            </div>
-            """
-        ),
-        unsafe_allow_html=True
-    )
-
-    st.divider()
-
-    st.markdown("### Dashboard")
+    st.title("📦 Retail Intelligence")
 
     st.caption(
-        "Explore forecast performance, inventory planning, "
-        "demand spikes, business insights and next-month forecasts."
+        "Demand Forecasting & Inventory Planning"
+    )
+
+    st.divider()
+
+    st.subheader("Project")
+
+    st.write("**Model**")
+    st.write("Random Forest")
+
+    st.write("**Estimators**")
+    st.write("200 Trees")
+
+    st.write("**Learning Type**")
+    st.write("Supervised ML")
+
+    st.write("**Forecast Target**")
+    st.write("Future Sales")
+
+    st.divider()
+
+    st.subheader("Dashboard")
+
+    st.caption(
+        "Use the dashboard sections to explore "
+        "forecast performance, inventory planning, "
+        "demand spikes, business insights and "
+        "next-month forecasts."
     )
 
     st.divider()
@@ -495,52 +230,40 @@ with st.sidebar:
 # ============================================================
 
 st.markdown(
-    textwrap.dedent(
-        """
-        <div class="hero">
+    """
+    <div class="hero">
 
-            <div class="hero-circle"></div>
-            <div class="hero-circle-two"></div>
-
-            <div class="hero-content">
-
-                <div class="hero-badge">
-                    MACHINE LEARNING • RANDOM FOREST • RETAIL ANALYTICS
-                </div>
-
-                <div class="hero-title">
-                    Retail Demand Forecasting
-                    <br>
-                    & Inventory Planning
-                </div>
-
-                <div class="hero-description">
-                    Analyze historical retail transactions, forecast future
-                    demand, identify demand patterns, and support inventory
-                    planning through machine learning.
-                </div>
-
-            </div>
-
+        <div class="hero-badge">
+            MACHINE LEARNING • RANDOM FOREST • RETAIL ANALYTICS
         </div>
-        """
-    ),
+
+        <div class="hero-title">
+            Retail Demand Forecasting
+            <br>
+            & Inventory Planning
+        </div>
+
+        <div class="hero-text">
+            Analyze historical retail transactions, forecast future demand,
+            identify demand patterns, and support inventory planning
+            through machine learning.
+        </div>
+
+    </div>
+    """,
     unsafe_allow_html=True
 )
 
 
 # ============================================================
-# FILE UPLOAD
+# UPLOAD DATASET
 # ============================================================
 
-st.markdown(
-    "### Upload Retail Dataset"
-)
+st.subheader("Upload Retail Dataset")
 
 uploaded_file = st.file_uploader(
     "Upload your retail transaction CSV",
-    type=["csv"],
-    label_visibility="collapsed"
+    type=["csv"]
 )
 
 
@@ -550,29 +273,9 @@ uploaded_file = st.file_uploader(
 
 if uploaded_file is None:
 
-    st.markdown(
-        textwrap.dedent(
-            """
-            <div class="empty-state">
-
-                <div class="empty-icon">
-                    📊
-                </div>
-
-                <div class="empty-title">
-                    Ready to Analyze Your Retail Data
-                </div>
-
-                <div class="empty-description">
-                    Upload your retail transaction CSV above to generate
-                    forecasts, model performance metrics, demand insights,
-                    and inventory recommendations.
-                </div>
-
-            </div>
-            """
-        ),
-        unsafe_allow_html=True
+    st.info(
+        "📊 Upload your retail transaction CSV above "
+        "to generate forecasts and business insights."
     )
 
     st.stop()
@@ -589,14 +292,14 @@ try:
 except Exception as e:
 
     st.error(
-        f"Unable to read the uploaded CSV: {e}"
+        f"Unable to read the CSV file: {e}"
     )
 
     st.stop()
 
 
 # ============================================================
-# COLUMN VALIDATION
+# REQUIRED COLUMNS
 # ============================================================
 
 required_columns = [
@@ -618,18 +321,16 @@ missing_columns = [
 if missing_columns:
 
     st.error(
-        "The uploaded dataset is missing required columns."
+        "The uploaded dataset is missing required columns:"
     )
 
-    st.write(
-        missing_columns
-    )
+    st.write(missing_columns)
 
     st.stop()
 
 
 # ============================================================
-# DATE PREPARATION
+# DATE PROCESSING
 # ============================================================
 
 try:
@@ -641,19 +342,14 @@ try:
 except Exception:
 
     st.error(
-        "The 'Order Date' column could not be converted to a valid date."
+        "Order Date could not be converted to a valid date."
     )
 
     st.stop()
 
 
-df["order_year"] = (
-    df["Order Date"].dt.year
-)
-
-df["order_month"] = (
-    df["Order Date"].dt.month
-)
+df["order_year"] = df["Order Date"].dt.year
+df["order_month"] = df["Order Date"].dt.month
 
 
 # ============================================================
@@ -723,23 +419,24 @@ monthly["sales_growth"] = (
     .pct_change()
 )
 
-# Existing project demand-spike rule:
-# month-over-month growth > 20%
+
+# ============================================================
+# DEMAND SPIKE
+# EXISTING PROJECT THRESHOLD = 20%
+# ============================================================
 
 monthly["demand_spike"] = (
     monthly["sales_growth"] > 0.20
 ).astype(int)
 
 
-# Remove rows without enough historical lag information
+# Remove rows where lag/rolling features don't exist
 
-monthly.dropna(
-    inplace=True
-)
+monthly = monthly.dropna().reset_index(drop=True)
 
 
 # ============================================================
-# ONE-HOT ENCODING
+# ENCODING
 # ============================================================
 
 monthly_encoded = pd.get_dummies(
@@ -789,24 +486,22 @@ test = monthly_encoded[
 if train.empty or test.empty:
 
     st.error(
-        "The dataset does not contain enough yearly data "
-        "to create a train/test split."
+        "Not enough yearly data to create the "
+        "train/test split."
     )
 
     st.stop()
 
 
 X_train = train[features]
-
 y_train = train["Sales"]
 
 X_test = test[features]
-
 y_test = test["Sales"]
 
 
 # ============================================================
-# RANDOM FOREST MODEL
+# RANDOM FOREST
 # ============================================================
 
 rf = RandomForestRegressor(
@@ -821,7 +516,7 @@ rf.fit(
 
 
 # ============================================================
-# TEST PREDICTIONS
+# PREDICTION
 # ============================================================
 
 pred_sales = rf.predict(
@@ -830,7 +525,7 @@ pred_sales = rf.predict(
 
 
 # ============================================================
-# MODEL METRICS
+# MODEL EVALUATION
 # ============================================================
 
 mae = np.mean(
@@ -845,7 +540,7 @@ rmse = np.sqrt(
     )
 )
 
-mape = safe_mape(
+mape = calculate_mape(
     y_test.values,
     pred_sales
 )
@@ -855,16 +550,20 @@ mape = safe_mape(
 # EXECUTIVE OVERVIEW
 # ============================================================
 
-section_header(
-    "Executive Overview",
-    "A quick snapshot of the retail dataset and forecasting model"
+st.markdown(
+    '<div class="section-title">Executive Overview</div>',
+    unsafe_allow_html=True
+)
+
+st.markdown(
+    '<div class="section-text">Quick snapshot of the dataset and forecasting model</div>',
+    unsafe_allow_html=True
 )
 
 
-k1, k2, k3, k4 = st.columns(4)
+c1, c2, c3, c4 = st.columns(4)
 
-
-with k1:
+with c1:
 
     metric_card(
         "Transactions",
@@ -872,8 +571,7 @@ with k1:
         "records analyzed"
     )
 
-
-with k2:
+with c2:
 
     metric_card(
         "Categories",
@@ -881,17 +579,15 @@ with k2:
         "product categories"
     )
 
-
-with k3:
+with c3:
 
     metric_card(
-        "Forecast MAPE",
-        f"{mape:.2f}%" if not np.isnan(mape) else "N/A",
-        "lower is better"
+        "Forecast Accuracy",
+        f"{mape:.2f}%",
+        "MAPE • lower is better"
     )
 
-
-with k4:
+with c4:
 
     metric_card(
         "Model",
@@ -900,20 +596,15 @@ with k4:
     )
 
 
-st.markdown(
-    '<div class="divider"></div>',
-    unsafe_allow_html=True
-)
-
-
 # ============================================================
-# BUSINESS KPI ROW
+# BUSINESS KPIs
 # ============================================================
 
-b1, b2, b3, b4 = st.columns(4)
+st.write("")
 
+c1, c2, c3, c4 = st.columns(4)
 
-with b1:
+with c1:
 
     metric_card(
         "Total Sales",
@@ -923,8 +614,7 @@ with b1:
         "historical sales"
     )
 
-
-with b2:
+with c2:
 
     metric_card(
         "Units Sold",
@@ -934,8 +624,7 @@ with b2:
         "total quantity"
     )
 
-
-with b3:
+with c3:
 
     metric_card(
         "Total Profit",
@@ -945,8 +634,7 @@ with b3:
         "historical profit"
     )
 
-
-with b4:
+with c4:
 
     metric_card(
         "Test Year",
@@ -955,11 +643,8 @@ with b4:
     )
 
 
-st.write("")
-
-
 # ============================================================
-# DASHBOARD TABS
+# TABS
 # ============================================================
 
 tab1, tab2, tab3, tab4, tab5 = st.tabs(
@@ -974,20 +659,18 @@ tab1, tab2, tab3, tab4, tab5 = st.tabs(
 
 
 # ============================================================
-# TAB 1
-# FORECAST PERFORMANCE
+# TAB 1 - FORECAST PERFORMANCE
 # ============================================================
 
 with tab1:
 
-    section_header(
-        "Model Accuracy",
-        "Random Forest evaluated on out-of-time test data"
+    st.header("Model Accuracy")
+
+    st.caption(
+        "Evaluated on the most recent year held out from training."
     )
 
-
     c1, c2, c3 = st.columns(3)
-
 
     with c1:
 
@@ -997,7 +680,6 @@ with tab1:
             "MAE • lower is better"
         )
 
-
     with c2:
 
         metric_card(
@@ -1006,45 +688,33 @@ with tab1:
             "RMSE • lower is better"
         )
 
-
     with c3:
 
         metric_card(
             "Mean Absolute Percentage Error",
-            f"{mape:.2f}%" if not np.isnan(mape) else "N/A",
+            f"{mape:.2f}%",
             "MAPE • lower is better"
         )
 
 
-    section_header(
-        "Actual vs Predicted Sales",
-        "Comparison between observed sales and Random Forest predictions"
-    )
-
+    st.subheader("Actual vs Predicted Sales")
 
     fig, ax = plt.subplots(
         figsize=(12, 5)
     )
 
-
     ax.plot(
         y_test.values,
         label="Actual Sales",
-        linewidth=2.2,
-        marker="o",
-        markersize=3
+        linewidth=2
     )
-
 
     ax.plot(
         pred_sales,
         label="Predicted Sales",
-        linewidth=2.2,
-        linestyle="--",
-        marker="o",
-        markersize=3
+        linewidth=2,
+        linestyle="--"
     )
-
 
     ax.set_xlabel(
         "Test Observation"
@@ -1054,116 +724,89 @@ with tab1:
         "Sales"
     )
 
-
     ax.yaxis.set_major_formatter(
         mticker.FuncFormatter(
             lambda x, _: f"{x:,.0f}"
         )
     )
 
-
     ax.grid(
         axis="y",
         alpha=0.2
     )
 
-
     ax.spines["top"].set_visible(False)
-
     ax.spines["right"].set_visible(False)
-
 
     ax.legend(
         frameon=False
     )
-
 
     st.pyplot(
         fig,
         use_container_width=True
     )
 
-
     plt.close(fig)
 
 
-    # --------------------------------------------------------
-    # FEATURE IMPORTANCE
-    # --------------------------------------------------------
+    # Feature importance
 
-    section_header(
-        "Feature Importance",
-        "Relative importance of model input features"
-    )
-
+    st.subheader("Feature Importance")
 
     importance_df = pd.DataFrame(
         {
             "Feature": features,
             "Importance": rf.feature_importances_
         }
-    )
+    ).sort_values(
+        "Importance",
+        ascending=False
+    ).head(10)
 
 
-    importance_df = (
-        importance_df
-        .sort_values(
-            "Importance",
-            ascending=False
-        )
-        .head(10)
-    )
-
-
-    fig2, ax2 = plt.subplots(
+    fig, ax = plt.subplots(
         figsize=(10, 5)
     )
 
-
-    ax2.barh(
+    ax.barh(
         importance_df["Feature"],
         importance_df["Importance"]
     )
 
+    ax.invert_yaxis()
 
-    ax2.invert_yaxis()
-
-
-    ax2.set_xlabel(
+    ax.set_xlabel(
         "Importance"
     )
 
-
-    ax2.spines["top"].set_visible(False)
-
-    ax2.spines["right"].set_visible(False)
-
-
-    ax2.grid(
+    ax.grid(
         axis="x",
         alpha=0.2
     )
 
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     st.pyplot(
-        fig2,
+        fig,
         use_container_width=True
     )
 
-
-    plt.close(fig2)
+    plt.close(fig)
 
 
 # ============================================================
-# TAB 2
-# INVENTORY PLANNING
+# TAB 2 - INVENTORY PLANNING
 # ============================================================
 
 with tab2:
 
-    section_header(
-        "Inventory Planning",
-        "Predicted demand plus the project's 15% safety-stock buffer"
+    st.header("Inventory Planning")
+
+    st.caption(
+        "Forecast-based inventory planning using the project's "
+        "15% safety-stock buffer."
     )
 
 
@@ -1175,15 +818,11 @@ with tab2:
     ].copy()
 
 
-    inventory["Predicted Demand"] = (
-        pred_sales
-    )
-
+    inventory["Predicted Demand"] = pred_sales
 
     inventory["Safety Stock"] = (
         inventory["Predicted Demand"] * 0.15
     )
-
 
     inventory["Recommended Inventory"] = (
         inventory["Predicted Demand"]
@@ -1191,10 +830,9 @@ with tab2:
     )
 
 
-    i1, i2, i3 = st.columns(3)
+    c1, c2, c3 = st.columns(3)
 
-
-    with i1:
+    with c1:
 
         metric_card(
             "Predicted Demand",
@@ -1204,8 +842,7 @@ with tab2:
             "test-period forecast"
         )
 
-
-    with i2:
+    with c2:
 
         metric_card(
             "Safety Stock",
@@ -1215,8 +852,7 @@ with tab2:
             "15% buffer"
         )
 
-
-    with i3:
+    with c3:
 
         metric_card(
             "Recommended Inventory",
@@ -1227,15 +863,13 @@ with tab2:
         )
 
 
-    st.write("")
+    st.subheader("Inventory Plan")
 
 
     inventory_display = inventory.copy()
 
-
     inventory_display["Period"] = (
-        inventory_display["order_year"]
-        .astype(str)
+        inventory_display["order_year"].astype(str)
         + "-"
         + inventory_display["order_month"]
         .astype(int)
@@ -1255,43 +889,33 @@ with tab2:
 
 
     st.dataframe(
-        inventory_display.style.format(
-            {
-                "Predicted Demand": "{:,.0f}",
-                "Safety Stock": "{:,.0f}",
-                "Recommended Inventory": "{:,.0f}"
-            }
-        ),
+        inventory_display,
         use_container_width=True,
         hide_index=True
     )
 
 
-    inventory_csv = (
-        inventory_display
-        .to_csv(index=False)
-        .encode("utf-8")
-    )
-
-
     st.download_button(
         "⬇ Download Inventory Plan",
-        inventory_csv,
+        inventory_display.to_csv(
+            index=False
+        ).encode("utf-8"),
         "inventory_plan.csv",
         "text/csv"
     )
 
 
 # ============================================================
-# TAB 3
-# DEMAND SPIKES
+# TAB 3 - DEMAND SPIKES
 # ============================================================
 
 with tab3:
 
-    section_header(
-        "Demand Spike Detection",
-        "A spike is detected when month-over-month sales growth exceeds 20%"
+    st.header("Demand Spike Detection")
+
+    st.caption(
+        "A demand spike is detected when month-over-month "
+        "sales growth exceeds 20%."
     )
 
 
@@ -1302,7 +926,6 @@ with tab3:
 
     spike_count = len(spikes)
 
-
     spike_rate = (
         spike_count / len(monthly) * 100
         if len(monthly) > 0
@@ -1310,10 +933,9 @@ with tab3:
     )
 
 
-    s1, s2 = st.columns(2)
+    c1, c2 = st.columns(2)
 
-
-    with s1:
+    with c1:
 
         metric_card(
             "Demand Spike Events",
@@ -1321,20 +943,16 @@ with tab3:
             "detected observations"
         )
 
-
-    with s2:
+    with c2:
 
         metric_card(
             "Spike Rate",
             f"{spike_rate:.1f}%",
-            "of monthly observations"
+            "monthly observations"
         )
 
 
-    section_header(
-        "Demand Spike Distribution",
-        "Distribution of observations with and without detected spikes"
-    )
+    st.subheader("Demand Spike Distribution")
 
 
     spike_counts = (
@@ -1345,73 +963,51 @@ with tab3:
 
 
     labels = []
-
     values = []
 
 
     if 0 in spike_counts.index:
 
-        labels.append(
-            "No Spike"
-        )
-
-        values.append(
-            spike_counts.loc[0]
-        )
+        labels.append("No Spike")
+        values.append(spike_counts.loc[0])
 
 
     if 1 in spike_counts.index:
 
-        labels.append(
-            "Spike"
-        )
-
-        values.append(
-            spike_counts.loc[1]
-        )
+        labels.append("Spike")
+        values.append(spike_counts.loc[1])
 
 
-    fig3, ax3 = plt.subplots(
-        figsize=(8, 4.5)
+    fig, ax = plt.subplots(
+        figsize=(8, 4)
     )
 
-
-    ax3.bar(
+    ax.bar(
         labels,
-        values,
-        width=0.5
+        values
     )
 
-
-    ax3.set_ylabel(
+    ax.set_ylabel(
         "Observations"
     )
 
-
-    ax3.spines["top"].set_visible(False)
-
-    ax3.spines["right"].set_visible(False)
-
-
-    ax3.grid(
+    ax.grid(
         axis="y",
         alpha=0.2
     )
 
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     st.pyplot(
-        fig3,
+        fig,
         use_container_width=True
     )
 
+    plt.close(fig)
 
-    plt.close(fig3)
 
-
-    section_header(
-        "Detected Spike Events",
-        "Monthly observations where sales growth exceeded the 20% threshold"
-    )
+    st.subheader("Detected Spike Events")
 
 
     spike_display = spikes[
@@ -1425,33 +1021,26 @@ with tab3:
     ].copy()
 
 
-    spike_display["sales_growth"] = (
-        spike_display["sales_growth"] * 100
-    )
+    spike_display["sales_growth"] *= 100
 
 
     st.dataframe(
-        spike_display.style.format(
-            {
-                "Sales": "{:,.0f}",
-                "sales_growth": "{:.1f}%"
-            }
-        ),
+        spike_display,
         use_container_width=True,
         hide_index=True
     )
 
 
 # ============================================================
-# TAB 4
-# BUSINESS INSIGHTS
+# TAB 4 - BUSINESS INSIGHTS
 # ============================================================
 
 with tab4:
 
-    section_header(
-        "Business Insights",
-        "Key patterns extracted from the historical retail data"
+    st.header("Business Insights")
+
+    st.caption(
+        "Key patterns identified from the historical retail data."
     )
 
 
@@ -1465,70 +1054,8 @@ with tab4:
         monthly_average.idxmax()
     )
 
-
     weakest_month = int(
         monthly_average.idxmin()
-    )
-
-
-    top_category = (
-        df.groupby(
-            "Category of Goods"
-        )["Sales"]
-        .sum()
-        .idxmax()
-    )
-
-
-    top_region = (
-        df.groupby("Region")["Sales"]
-        .sum()
-        .idxmax()
-    )
-
-
-    q1, q2, q3, q4 = st.columns(4)
-
-
-    with q1:
-
-        metric_card(
-            "Best Month",
-            str(best_month),
-            "highest average sales"
-        )
-
-
-    with q2:
-
-        metric_card(
-            "Weakest Month",
-            str(weakest_month),
-            "lowest average sales"
-        )
-
-
-    with q3:
-
-        metric_card(
-            "Top Category",
-            top_category,
-            "highest total sales"
-        )
-
-
-    with q4:
-
-        metric_card(
-            "Top Region",
-            top_region,
-            "highest total sales"
-        )
-
-
-    section_header(
-        "Sales by Category",
-        "Historical sales contribution by product category"
     )
 
 
@@ -1543,124 +1070,185 @@ with tab4:
     )
 
 
-    fig4, ax4 = plt.subplots(
-        figsize=(11, 5)
+    region_sales = (
+        df.groupby(
+            "Region"
+        )["Sales"]
+        .sum()
+        .sort_values(
+            ascending=False
+        )
     )
 
 
-    ax4.bar(
+    top_category = category_sales.index[0]
+
+    top_region = region_sales.index[0]
+
+
+    c1, c2, c3, c4 = st.columns(4)
+
+    with c1:
+
+        metric_card(
+            "Best Month",
+            str(best_month),
+            "highest average sales"
+        )
+
+    with c2:
+
+        metric_card(
+            "Weakest Month",
+            str(weakest_month),
+            "lowest average sales"
+        )
+
+    with c3:
+
+        metric_card(
+            "Top Category",
+            top_category,
+            "highest total sales"
+        )
+
+    with c4:
+
+        metric_card(
+            "Top Region",
+            top_region,
+            "highest total sales"
+        )
+
+
+    st.subheader("Sales by Category")
+
+
+    fig, ax = plt.subplots(
+        figsize=(11, 5)
+    )
+
+    ax.bar(
         category_sales.index,
         category_sales.values
     )
 
-
-    ax4.set_ylabel(
+    ax.set_ylabel(
         "Total Sales"
     )
 
-
-    ax4.yaxis.set_major_formatter(
+    ax.yaxis.set_major_formatter(
         mticker.FuncFormatter(
             lambda x, _: f"{x:,.0f}"
         )
     )
 
-
-    ax4.tick_params(
+    ax.tick_params(
         axis="x",
         rotation=30
     )
 
-
-    ax4.spines["top"].set_visible(False)
-
-    ax4.spines["right"].set_visible(False)
-
-
-    ax4.grid(
+    ax.grid(
         axis="y",
         alpha=0.2
     )
 
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
 
     st.pyplot(
-        fig4,
+        fig,
         use_container_width=True
     )
 
+    plt.close(fig)
 
-    plt.close(fig4)
+
+    st.subheader("Regional Sales")
+
+
+    regional_df = region_sales.reset_index()
+
+    regional_df.columns = [
+        "Region",
+        "Sales"
+    ]
+
+
+    st.dataframe(
+        regional_df,
+        use_container_width=True,
+        hide_index=True
+    )
 
 
 # ============================================================
-# TAB 5
-# NEXT MONTH FORECAST
+# TAB 5 - NEXT MONTH FORECAST
 # ============================================================
 
 with tab5:
 
-    section_header(
-        "Next Month Forecast",
-        "Category-level forecast generated using the trained Random Forest model"
+    st.header("Next Month Forecast")
+
+    st.caption(
+        "Category-level forecast generated using the trained "
+        "Random Forest model."
     )
 
 
-    # --------------------------------------------------------
-    # Get latest row for each category
-    # --------------------------------------------------------
-
-    category_column = "Category of Goods"
+    # Latest observation for every category
 
     latest_category_rows = (
         monthly
         .sort_values(
             [
-                category_column,
+                "Category of Goods",
                 "order_year",
                 "order_month"
             ]
         )
         .groupby(
-            category_column
+            "Category of Goods"
         )
         .tail(1)
         .copy()
     )
 
 
-    # --------------------------------------------------------
-    # Prepare future features
-    # --------------------------------------------------------
-
     future_base = latest_category_rows.copy()
 
 
-    future_base["order_year"] = np.where(
-        future_base["order_month"] == 12,
-        future_base["order_year"] + 1,
-        future_base["order_year"]
-    )
-
+    # --------------------------------------------------------
+    # Move to next month
+    # --------------------------------------------------------
 
     future_base["order_month"] = (
         future_base["order_month"] % 12
     ) + 1
 
 
+    future_base["order_year"] = np.where(
+        latest_category_rows["order_month"] == 12,
+        latest_category_rows["order_year"] + 1,
+        latest_category_rows["order_year"]
+    )
+
+
+    # --------------------------------------------------------
+    # Update lag features
+    # --------------------------------------------------------
+
     future_base["sales_lag_3"] = (
         future_base["sales_lag_2"]
     )
-
 
     future_base["sales_lag_2"] = (
         future_base["sales_lag_1"]
     )
 
-
     future_base["sales_lag_1"] = (
         future_base["Sales"]
     )
-
 
     future_base["rolling_mean_3"] = (
         future_base[
@@ -1674,19 +1262,15 @@ with tab5:
 
 
     # --------------------------------------------------------
-    # Encode future category data
+    # Encode future data
     # --------------------------------------------------------
 
     future_encoded = pd.get_dummies(
         future_base,
-        columns=[
-            "Category of Goods"
-        ],
+        columns=["Category of Goods"],
         drop_first=True
     )
 
-
-    # Add any missing training columns
 
     for column in features:
 
@@ -1695,15 +1279,13 @@ with tab5:
             future_encoded[column] = 0
 
 
-    # Keep only model features
-
     future_X = future_encoded[
         features
     ]
 
 
     # --------------------------------------------------------
-    # Forecast
+    # Predict
     # --------------------------------------------------------
 
     future_predictions = rf.predict(
@@ -1717,7 +1299,7 @@ with tab5:
 
 
     # --------------------------------------------------------
-    # Inventory recommendation
+    # 15% inventory buffer
     # --------------------------------------------------------
 
     future_base[
@@ -1730,27 +1312,22 @@ with tab5:
 
 
     # --------------------------------------------------------
-    # Forecast KPIs
+    # KPI
     # --------------------------------------------------------
 
-    total_forecast = (
-        future_base[
-            "Predicted Next Month Sales"
-        ].sum()
-    )
+    total_forecast = future_base[
+        "Predicted Next Month Sales"
+    ].sum()
 
 
-    total_recommended_inventory = (
-        future_base[
-            "Recommended Inventory"
-        ].sum()
-    )
+    total_inventory = future_base[
+        "Recommended Inventory"
+    ].sum()
 
 
-    f1, f2 = st.columns(2)
+    c1, c2 = st.columns(2)
 
-
-    with f1:
+    with c1:
 
         metric_card(
             "Next Month Forecast",
@@ -1760,22 +1337,22 @@ with tab5:
             "predicted sales"
         )
 
-
-    with f2:
+    with c2:
 
         metric_card(
             "Recommended Inventory",
             format_number(
-                total_recommended_inventory
+                total_inventory
             ),
             "forecast + 15% buffer"
         )
 
 
-    section_header(
-        "Category Forecast",
-        "Predicted sales and recommended inventory for the upcoming month"
-    )
+    # --------------------------------------------------------
+    # Forecast table
+    # --------------------------------------------------------
+
+    st.subheader("Category Forecast")
 
 
     forecast_display = future_base[
@@ -1789,40 +1366,27 @@ with tab5:
     ].copy()
 
 
-    forecast_display = (
-        forecast_display
-        .rename(
-            columns={
-                "Category of Goods": "Category",
-                "order_year": "Year",
-                "order_month": "Month"
-            }
-        )
-    )
+    forecast_display.columns = [
+        "Category",
+        "Year",
+        "Month",
+        "Predicted Sales",
+        "Recommended Inventory"
+    ]
 
 
     st.dataframe(
-        forecast_display.style.format(
-            {
-                "Predicted Next Month Sales": "{:,.0f}",
-                "Recommended Inventory": "{:,.0f}"
-            }
-        ),
+        forecast_display,
         use_container_width=True,
         hide_index=True
     )
 
 
-    forecast_csv = (
-        forecast_display
-        .to_csv(index=False)
-        .encode("utf-8")
-    )
-
-
     st.download_button(
         "⬇ Download Next Month Forecast",
-        forecast_csv,
+        forecast_display.to_csv(
+            index=False
+        ).encode("utf-8"),
         "next_month_forecast.csv",
         "text/csv"
     )
@@ -1832,81 +1396,67 @@ with tab5:
     # Forecast chart
     # --------------------------------------------------------
 
-    chart_data = (
-        forecast_display
-        .sort_values(
-            "Predicted Next Month Sales",
-            ascending=False
-        )
+    chart_data = forecast_display.sort_values(
+        "Predicted Sales",
+        ascending=False
     )
 
 
-    fig5, ax5 = plt.subplots(
+    fig, ax = plt.subplots(
         figsize=(11, 5)
     )
 
 
-    ax5.bar(
+    ax.bar(
         chart_data["Category"],
-        chart_data[
-            "Predicted Next Month Sales"
-        ]
+        chart_data["Predicted Sales"]
     )
 
 
-    ax5.set_ylabel(
+    ax.set_ylabel(
         "Predicted Sales"
     )
 
 
-    ax5.yaxis.set_major_formatter(
+    ax.yaxis.set_major_formatter(
         mticker.FuncFormatter(
             lambda x, _: f"{x:,.0f}"
         )
     )
 
 
-    ax5.tick_params(
+    ax.tick_params(
         axis="x",
         rotation=30
     )
 
 
-    ax5.spines["top"].set_visible(False)
-
-    ax5.spines["right"].set_visible(False)
-
-
-    ax5.grid(
+    ax.grid(
         axis="y",
         alpha=0.2
     )
 
 
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+
+
     st.pyplot(
-        fig5,
+        fig,
         use_container_width=True
     )
 
 
-    plt.close(fig5)
+    plt.close(fig)
 
 
 # ============================================================
 # FOOTER
 # ============================================================
 
-st.markdown(
-    textwrap.dedent(
-        """
-        <div class="footer">
-            Retail Demand Forecasting & Inventory Planning
-            &nbsp;•&nbsp;
-            Random Forest
-            &nbsp;•&nbsp;
-            200 Estimators
-        </div>
-        """
-    ),
-    unsafe_allow_html=True
+st.divider()
+
+st.caption(
+    "Retail Demand Forecasting & Inventory Planning • "
+    "Random Forest • 200 Estimators"
 )
