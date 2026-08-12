@@ -437,13 +437,14 @@ with c4:
         str(latest_year)
     )
 
-tab1, tab2, tab3, tab4, tab5 = st.tabs(
+tab1, tab2, tab3, tab4, tab5, tab6 = st.tabs(
     [
         "📈 Forecast Performance",
         "📦 Inventory Planning",
         "🚨 Demand Spikes",
         "💡 Business Insights",
-        "🔮 12-Month Forecast"
+        "🔮 12-Month Forecast",
+        "✍️ Manual Prediction"
     ]
 )
 
@@ -1389,6 +1390,158 @@ with tab5:
         use_container_width=True,
         hide_index=True
     )
+
+with tab6:
+    st.header("Manual Prediction")
+
+    st.caption(
+        "Manually enter recent sales figures for a category to get "
+        "an on-demand prediction from the trained model, without "
+        "needing the full dataset context."
+    )
+
+    category_columns_manual = [
+        column
+        for column in features
+        if column.startswith("Category of Goods_")
+    ]
+
+    manual_category_options = ["Dairy Products"] + [
+        column.replace("Category of Goods_", "")
+        for column in category_columns_manual
+    ]
+
+    with st.form("manual_prediction_form"):
+
+        st.subheader("Enter Recent Sales History")
+
+        col1, col2 = st.columns(2)
+
+        with col1:
+            manual_category = st.selectbox(
+                "Product Category",
+                options=sorted(manual_category_options)
+            )
+
+            manual_month = st.selectbox(
+                "Target Month (the month you are predicting for)",
+                options=list(range(1, 13)),
+                format_func=lambda m: pd.Timestamp(
+                    year=2000, month=m, day=1
+                ).strftime("%B")
+            )
+
+        with col2:
+            manual_year = st.number_input(
+                "Target Year",
+                min_value=2000,
+                max_value=2100,
+                value=int(latest_year) + 1,
+                step=1
+            )
+
+        st.markdown("**Last 3 Known Months of Sales** (most recent first)")
+
+        m1, m2, m3 = st.columns(3)
+
+        with m1:
+            manual_lag_1 = st.number_input(
+                "Last Month's Sales",
+                min_value=0.0,
+                value=0.0,
+                step=1000.0,
+                format="%.2f"
+            )
+
+        with m2:
+            manual_lag_2 = st.number_input(
+                "2 Months Ago Sales",
+                min_value=0.0,
+                value=0.0,
+                step=1000.0,
+                format="%.2f"
+            )
+
+        with m3:
+            manual_lag_3 = st.number_input(
+                "3 Months Ago Sales",
+                min_value=0.0,
+                value=0.0,
+                step=1000.0,
+                format="%.2f"
+            )
+
+        submitted = st.form_submit_button("Predict Sales")
+
+    if submitted:
+
+        rolling_mean_manual = np.mean(
+            [manual_lag_1, manual_lag_2, manual_lag_3]
+        )
+
+        manual_row = {
+            "order_year": int(manual_year),
+            "order_month": int(manual_month),
+            "sales_lag_1": manual_lag_1,
+            "sales_lag_2": manual_lag_2,
+            "sales_lag_3": manual_lag_3,
+            "rolling_mean_3": rolling_mean_manual
+        }
+
+        for column in category_columns_manual:
+            manual_row[column] = 0
+
+        manual_category_feature = (
+            "Category of Goods_" + str(manual_category)
+        )
+
+        if manual_category_feature in manual_row:
+            manual_row[manual_category_feature] = 1
+
+        manual_input_df = pd.DataFrame([manual_row])
+
+        for feature in features:
+            if feature not in manual_input_df.columns:
+                manual_input_df[feature] = 0
+
+        manual_input_df = manual_input_df[features]
+
+        manual_prediction = model.predict(manual_input_df)[0]
+        manual_prediction = max(0, manual_prediction)
+
+        manual_safety_stock = manual_prediction * 0.15
+        manual_recommended_inventory = (
+            manual_prediction + manual_safety_stock
+        )
+
+        st.success("Prediction generated successfully")
+
+        r1, r2, r3 = st.columns(3)
+
+        with r1:
+            st.metric(
+                "Predicted Sales",
+                f"{manual_prediction:,.0f}"
+            )
+
+        with r2:
+            st.metric(
+                "Safety Stock (15%)",
+                f"{manual_safety_stock:,.0f}"
+            )
+
+        with r3:
+            st.metric(
+                "Recommended Inventory",
+                f"{manual_recommended_inventory:,.0f}"
+            )
+
+        st.caption(
+            f"Prediction for **{manual_category}** — "
+            f"{pd.Timestamp(year=2000, month=int(manual_month), day=1).strftime('%B')} "
+            f"{int(manual_year)}, based on a 3-month rolling average of "
+            f"{rolling_mean_manual:,.0f}."
+        )
 
 st.divider()
 
