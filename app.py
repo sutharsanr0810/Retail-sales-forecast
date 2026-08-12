@@ -1096,7 +1096,59 @@ with tab5:
             peak_month
         )
 
-    st.subheader("Monthly Forecast")
+    st.subheader("Monthly Forecast by Category")
+
+    st.caption(
+        "Each row is one category's predicted sales for one month — "
+        "this is the level you'd actually use for stocking decisions."
+    )
+
+    category_display = forecast_df.sort_values(
+        ["Year", "Month Number", "Category"]
+    )[
+        [
+            "Month",
+            "Category",
+            "Predicted Sales",
+            "Safety Stock",
+            "Recommended Inventory"
+        ]
+    ]
+
+    category_filter = st.multiselect(
+        "Filter by category",
+        options=sorted(forecast_df["Category"].unique().tolist()),
+        default=[]
+    )
+
+    if category_filter:
+        filtered_display = category_display[
+            category_display["Category"].isin(category_filter)
+        ]
+    else:
+        filtered_display = category_display
+
+    st.dataframe(
+        filtered_display,
+        use_container_width=True,
+        hide_index=True
+    )
+
+    st.download_button(
+        label="⬇ Download 12-Month Forecast (By Category)",
+        data=category_display.to_csv(
+            index=False
+        ).encode("utf-8"),
+        file_name="12_month_forecast_by_category.csv",
+        mime="text/csv"
+    )
+
+    st.subheader("Monthly Forecast (All Categories Combined)")
+
+    st.caption(
+        "Summed across all categories — useful for a total "
+        "company-wide view, not for individual product stocking."
+    )
 
     monthly_display = monthly_forecast[
         [
@@ -1114,11 +1166,11 @@ with tab5:
     )
 
     st.download_button(
-        label="⬇ Download 12-Month Forecast",
+        label="⬇ Download 12-Month Forecast (Combined Total)",
         data=monthly_display.to_csv(
             index=False
         ).encode("utf-8"),
-        file_name="12_month_forecast.csv",
+        file_name="12_month_forecast_combined.csv",
         mime="text/csv"
     )
 
@@ -1137,7 +1189,7 @@ with tab5:
 
     ax.set_xlabel("Forecast Month")
     ax.set_ylabel("Predicted Sales")
-    ax.set_title("Next 12 Months Sales Forecast")
+    ax.set_title("Next 12 Months Sales Forecast (All Categories Combined)")
 
     ax.tick_params(
         axis="x",
@@ -1156,7 +1208,7 @@ with tab5:
 
     plt.close(fig)
 
-    st.subheader("Category-Level 12-Month Forecast")
+    st.subheader("Category-Level 12-Month Sales Trend")
 
     category_pivot = (
         forecast_df
@@ -1166,11 +1218,52 @@ with tab5:
             values="Predicted Sales",
             aggfunc="sum"
         )
-        .reset_index()
     )
 
+    category_pivot = category_pivot.reindex(
+        forecast_df.sort_values(["Year", "Month Number"])["Month"].unique()
+    )
+
+    fig, ax = plt.subplots(
+        figsize=(12, 5)
+    )
+
+    for category in category_pivot.columns:
+        ax.plot(
+            category_pivot.index,
+            category_pivot[category],
+            marker="o",
+            linewidth=2,
+            label=category
+        )
+
+    ax.set_xlabel("Forecast Month")
+    ax.set_ylabel("Predicted Sales")
+    ax.set_title("Next 12 Months Sales Forecast by Category")
+    ax.legend(
+        loc="upper left",
+        bbox_to_anchor=(1.0, 1.0)
+    )
+    ax.tick_params(
+        axis="x",
+        rotation=35
+    )
+    ax.grid(
+        axis="y",
+        alpha=0.25
+    )
+
+    st.pyplot(
+        fig,
+        use_container_width=True
+    )
+
+    plt.close(fig)
+
+    st.subheader("Category-Level 12-Month Forecast (Pivot Table)")
+
     st.dataframe(
-        category_pivot,
+        category_pivot.reset_index(),
         use_container_width=True,
         hide_index=True
     )
