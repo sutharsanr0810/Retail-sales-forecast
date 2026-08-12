@@ -428,5 +428,3 @@ with tabs[4]:
 
 st.divider()
 st.caption("Retail Inventory Intelligence • Random Forest • 200 Estimators")
-app (1).py
-Displaying app (1).py.
