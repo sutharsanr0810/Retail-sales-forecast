@@ -2,7 +2,42 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from sklearn.ensemble import RandomForestRegressor
+
+# ---- Global chart styling ----
+NAVY = "#0f172a"
+BLUE = "#3b82f6"
+LIGHT_BLUE = "#93c5fd"
+GRAY = "#94a3b8"
+GRID_COLOR = "#e5e7eb"
+PALETTE = ["#3b82f6", "#0f172a", "#60a5fa", "#1e3a5f", "#93c5fd", "#64748b"]
+
+plt.rcParams.update({
+    "font.family": "sans-serif",
+    "font.sans-serif": ["DejaVu Sans", "Arial", "Helvetica"],
+    "axes.edgecolor": GRID_COLOR,
+    "axes.labelcolor": "#374151",
+    "axes.titleweight": "bold",
+    "axes.titlesize": 13,
+    "axes.titlepad": 14,
+    "axes.labelsize": 10.5,
+    "xtick.color": "#6b7280",
+    "ytick.color": "#6b7280",
+    "figure.facecolor": "white",
+    "axes.facecolor": "white",
+    "legend.frameon": False,
+})
+
+
+def style_axes(ax, hide_left=False):
+    """Apply a consistent, clean look to any chart axes."""
+    ax.spines["top"].set_visible(False)
+    ax.spines["right"].set_visible(False)
+    if hide_left:
+        ax.spines["left"].set_visible(False)
+    ax.set_axisbelow(True)
+
 
 st.set_page_config(
     page_title="Retail Intelligence",
@@ -448,24 +483,43 @@ with tab1:
     ax.plot(
         actual,
         label="Actual Sales",
-        linewidth=2
+        linewidth=2.4,
+        color=NAVY,
+        marker="o",
+        markersize=5,
+        markerfacecolor="white",
+        markeredgewidth=1.6
     )
 
     ax.plot(
         predictions,
         label="Predicted Sales",
-        linewidth=2,
-        linestyle="--"
+        linewidth=2.4,
+        linestyle="--",
+        color=BLUE,
+        marker="o",
+        markersize=5,
+        markerfacecolor="white",
+        markeredgewidth=1.6
+    )
+
+    ax.fill_between(
+        range(len(actual)),
+        actual,
+        predictions,
+        color=BLUE,
+        alpha=0.06
     )
 
     ax.set_xlabel("Test Observation")
     ax.set_ylabel("Sales")
     ax.set_title("Actual vs Predicted Sales")
-    ax.legend()
-    ax.grid(
-        axis="y",
-        alpha=0.25
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda x, _: f"{x:,.0f}")
     )
+    ax.legend(loc="upper left", fontsize=10)
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=1)
+    style_axes(ax)
 
     st.pyplot(
         fig,
@@ -496,18 +550,33 @@ with tab1:
         figsize=(10, 5)
     )
 
-    ax.barh(
+    n_bars = len(importance_df)
+    bar_colors = [NAVY if i == 0 else BLUE for i in range(n_bars)]
+
+    bars = ax.barh(
         importance_df["Feature"],
-        importance_df["Importance"]
+        importance_df["Importance"],
+        color=bar_colors,
+        height=0.65,
+        zorder=3
     )
+
+    for bar, value in zip(bars, importance_df["Importance"]):
+        ax.text(
+            value + importance_df["Importance"].max() * 0.015,
+            bar.get_y() + bar.get_height() / 2,
+            f"{value:.3f}",
+            va="center",
+            fontsize=9,
+            color="#374151"
+        )
 
     ax.invert_yaxis()
     ax.set_xlabel("Importance")
     ax.set_title("Top Model Features")
-    ax.grid(
-        axis="x",
-        alpha=0.25
-    )
+    ax.set_xlim(0, importance_df["Importance"].max() * 1.15)
+    ax.grid(axis="x", color=GRID_COLOR, linewidth=1, zorder=0)
+    style_axes(ax, hide_left=True)
 
     st.pyplot(
         fig,
@@ -666,20 +735,34 @@ with tab3:
         )
 
     fig, ax = plt.subplots(
-        figsize=(8, 4)
+        figsize=(7, 4)
     )
 
-    ax.bar(
+    bar_colors = ["#e2e8f0", BLUE]
+    bars = ax.bar(
         labels,
-        values
+        values,
+        color=bar_colors[:len(labels)],
+        width=0.45,
+        zorder=3
     )
+
+    for bar, value in zip(bars, values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            value + max(values) * 0.02,
+            f"{value:,}",
+            ha="center",
+            fontsize=10,
+            fontweight="bold",
+            color="#374151"
+        )
 
     ax.set_ylabel("Observations")
     ax.set_title("Demand Spike Distribution")
-    ax.grid(
-        axis="y",
-        alpha=0.25
-    )
+    ax.set_ylim(0, max(values) * 1.15)
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=1, zorder=0)
+    style_axes(ax)
 
     st.pyplot(
         fig,
@@ -801,24 +884,42 @@ with tab4:
         figsize=(11, 5)
     )
 
-    ax.bar(
+    n_cat = len(category_sales)
+    cat_colors = [NAVY if i == 0 else BLUE for i in range(n_cat)]
+
+    bars = ax.bar(
         category_sales.index,
-        category_sales.values
+        category_sales.values,
+        color=cat_colors,
+        width=0.6,
+        zorder=3
     )
+
+    for bar, value in zip(bars, category_sales.values):
+        ax.text(
+            bar.get_x() + bar.get_width() / 2,
+            value + category_sales.values.max() * 0.015,
+            f"{value:,.0f}",
+            ha="center",
+            fontsize=8.5,
+            color="#374151"
+        )
 
     ax.set_xlabel("Category")
     ax.set_ylabel("Total Sales")
     ax.set_title("Total Sales by Category")
+    ax.set_ylim(0, category_sales.values.max() * 1.15)
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda x, _: f"{x:,.0f}")
+    )
 
     ax.tick_params(
         axis="x",
         rotation=30
     )
 
-    ax.grid(
-        axis="y",
-        alpha=0.25
-    )
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=1, zorder=0)
+    style_axes(ax)
 
     st.pyplot(
         fig,
@@ -1184,22 +1285,37 @@ with tab5:
         monthly_forecast["Month"],
         monthly_forecast["Predicted Sales"],
         marker="o",
-        linewidth=2
+        linewidth=2.4,
+        color=BLUE,
+        markersize=6,
+        markerfacecolor="white",
+        markeredgewidth=1.8,
+        zorder=3
+    )
+
+    ax.fill_between(
+        range(len(monthly_forecast)),
+        monthly_forecast["Predicted Sales"],
+        monthly_forecast["Predicted Sales"].min() * 0.97,
+        color=BLUE,
+        alpha=0.08,
+        zorder=1
     )
 
     ax.set_xlabel("Forecast Month")
     ax.set_ylabel("Predicted Sales")
     ax.set_title("Next 12 Months Sales Forecast (All Categories Combined)")
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda x, _: f"{x:,.0f}")
+    )
 
     ax.tick_params(
         axis="x",
         rotation=35
     )
 
-    ax.grid(
-        axis="y",
-        alpha=0.25
-    )
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=1, zorder=0)
+    style_axes(ax)
 
     st.pyplot(
         fig,
@@ -1225,33 +1341,39 @@ with tab5:
     )
 
     fig, ax = plt.subplots(
-        figsize=(12, 5)
+        figsize=(12, 5.5)
     )
 
-    for category in category_pivot.columns:
+    for i, category in enumerate(category_pivot.columns):
         ax.plot(
             category_pivot.index,
             category_pivot[category],
             marker="o",
-            linewidth=2,
+            linewidth=2.2,
+            markersize=5,
+            color=PALETTE[i % len(PALETTE)],
             label=category
         )
 
     ax.set_xlabel("Forecast Month")
     ax.set_ylabel("Predicted Sales")
     ax.set_title("Next 12 Months Sales Forecast by Category")
+    ax.yaxis.set_major_formatter(
+        mticker.FuncFormatter(lambda x, _: f"{x:,.0f}")
+    )
     ax.legend(
         loc="upper left",
-        bbox_to_anchor=(1.0, 1.0)
+        bbox_to_anchor=(1.0, 1.0),
+        fontsize=9,
+        title="Category",
+        title_fontsize=9.5
     )
     ax.tick_params(
         axis="x",
         rotation=35
     )
-    ax.grid(
-        axis="y",
-        alpha=0.25
-    )
+    ax.grid(axis="y", color=GRID_COLOR, linewidth=1, zorder=0)
+    style_axes(ax)
 
     st.pyplot(
         fig,
