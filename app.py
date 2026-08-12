@@ -10,7 +10,90 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded"
 )
+st.markdown(
+    """
+    <style>
+    .stApp {
+        background-color: #f7f8fc;
+        color: #1f2937;
+    }
 
+    [data-testid="stSidebar"] {
+        background-color: #ffffff;
+        border-right: 1px solid #e5e7eb;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: #1f2937 !important;
+    }
+
+    h1, h2, h3, h4 {
+        color: #111827 !important;
+    }
+
+    p, span, label {
+        color: #374151;
+    }
+
+    [data-testid="stMetric"] {
+        background-color: #ffffff;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 18px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    }
+
+    [data-testid="stMetricLabel"] {
+        color: #6b7280 !important;
+    }
+
+    [data-testid="stMetricValue"] {
+        color: #111827 !important;
+    }
+
+    .stTabs [data-baseweb="tab-list"] {
+        gap: 8px;
+        background-color: #ffffff;
+        padding: 8px;
+        border-radius: 10px;
+        border: 1px solid #e5e7eb;
+    }
+
+    .stTabs [data-baseweb="tab"] {
+        color: #374151 !important;
+    }
+
+    .stTabs [aria-selected="true"] {
+        color: #111827 !important;
+        font-weight: 600;
+    }
+
+    [data-testid="stDataFrame"] {
+        background-color: #ffffff;
+        border-radius: 10px;
+    }
+
+    .stButton > button,
+    .stDownloadButton > button {
+        border-radius: 8px;
+        border: 1px solid #d1d5db;
+        background-color: #ffffff;
+        color: #111827;
+    }
+
+    .stButton > button:hover,
+    .stDownloadButton > button:hover {
+        border-color: #9ca3af;
+        background-color: #f3f4f6;
+    }
+
+    hr {
+        border-color: #e5e7eb;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
 st.title("📦 Retail Demand Forecasting & Inventory Planning")
 
 st.caption(
