@@ -2,14 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.ensemble import RandomForestRegressor
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
-
-
-# =========================================================
-# PAGE
-# =========================================================
+from sklearn.metrics import mean_absolute_error, mean_squared_error
 
 st.set_page_config(
     page_title="Retail Inventory Intelligence",
@@ -17,1217 +11,1106 @@ st.set_page_config(
     layout="wide"
 )
 
-
-# =========================================================
-# BLACK UI
-# =========================================================
-
 st.markdown("""
 <style>
-
-html, body, [class*="css"] {
-    background-color: #000000 !important;
-    color: #ffffff !important;
-}
-
-.stApp {
+.stApp, [data-testid="stAppViewContainer"], [data-testid="stHeader"] {
     background: #000000;
     color: #ffffff;
 }
-
-section[data-testid="stSidebar"] {
-    background: #050505 !important;
+[data-testid="stSidebar"] {
+    background: #050505;
     border-right: 1px solid #333333;
 }
-
-section[data-testid="stSidebar"] * {
+[data-testid="stSidebar"] * {
     color: #ffffff !important;
 }
-
 h1, h2, h3, h4, h5, h6 {
     color: #ffffff !important;
 }
-
-p, label, span, div {
-    color: #ffffff;
+p, label, li {
+    color: #d8d8d8;
 }
-
-.main-title {
-    font-size: 42px;
-    font-weight: 800;
-    color: #ffffff;
+span {
+    color: inherit;
 }
-
-.subtitle {
-    color: #aaaaaa !important;
-    font-size: 16px;
+[data-testid="stMetric"] {
+    background: #111111;
+    border: 1px solid #333333;
+    border-radius: 12px;
+    padding: 16px;
 }
-
-.card {
+[data-testid="stMetricLabel"] {
+    color: #bdbdbd !important;
+}
+[data-testid="stMetricValue"] {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+.stTabs [data-baseweb="tab-list"] {
     background: #080808;
+    border-bottom: 1px solid #333333;
+}
+.stTabs [data-baseweb="tab"] {
+    color: #aaaaaa !important;
+    background: #080808;
+}
+.stTabs [aria-selected="true"] {
+    color: #ffffff !important;
+    font-weight: 700;
+}
+[data-testid="stDataFrame"] {
+    background: #111111;
+    border: 1px solid #333333;
+}
+[data-testid="stDataFrame"] * {
+    color: #ffffff !important;
+}
+[data-testid="stFileUploader"] {
+    background: #111111;
     border: 1px solid #333333;
     border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 10px;
 }
-
-.card-title {
-    color: #bbbbbb;
-    font-size: 14px;
+[data-testid="stFileUploader"] * {
+    color: #ffffff !important;
 }
-
-.card-value {
-    color: #ffffff;
-    font-size: 30px;
-    font-weight: 800;
+button {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border: 1px solid #555555 !important;
 }
-
-.section-title {
-    color: #ffffff;
-    font-size: 22px;
-    font-weight: 700;
-    margin-top: 20px;
+button:hover {
+    background: #222222 !important;
+    border-color: #ffffff !important;
 }
-
-div[data-baseweb="select"] > div,
-div[data-baseweb="input"] > div {
-    background-color: #080808 !important;
-    color: white !important;
+input, textarea {
+    background: #111111 !important;
+    color: #ffffff !important;
+    border: 1px solid #444444 !important;
+}
+div[data-baseweb="select"] > div {
+    background: #111111 !important;
+    color: #ffffff !important;
     border-color: #444444 !important;
 }
-
-input {
-    background-color: #080808 !important;
-    color: white !important;
+div[data-baseweb="select"] * {
+    color: #ffffff !important;
 }
-
-textarea {
-    background-color: #080808 !important;
-    color: white !important;
+[data-testid="stAlert"] {
+    background: #111111;
+    border: 1px solid #444444;
 }
-
-button {
-    border-radius: 7px !important;
+[data-testid="stAlert"] * {
+    color: #ffffff !important;
 }
-
-.stButton > button {
-    background: #ffffff !important;
-    color: #000000 !important;
-    border: none !important;
-    font-weight: 700;
-}
-
-.stDownloadButton > button {
-    background: #ffffff !important;
-    color: #000000 !important;
-}
-
-[data-testid="stDataFrame"] {
-    background-color: #050505 !important;
-}
-
 hr {
     border-color: #333333;
 }
-
+small {
+    color: #999999 !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
-
-# =========================================================
-# SESSION STATE
-# =========================================================
-
-if "sales_df" not in st.session_state:
-    st.session_state.sales_df = None
-
-if "inventory_df" not in st.session_state:
-    st.session_state.inventory_df = pd.DataFrame()
-
-if "forecast_df" not in st.session_state:
-    st.session_state.forecast_df = pd.DataFrame()
-
-if "model" not in st.session_state:
-    st.session_state.model = None
-
-
-# =========================================================
-# HELPER FUNCTIONS
-# =========================================================
-
-def find_column(df, names):
-    """Find a column using several possible names."""
-    lower = {str(c).lower().strip(): c for c in df.columns}
-
-    for name in names:
-        if name.lower() in lower:
-            return lower[name.lower()]
-
-    for c in df.columns:
-        cl = str(c).lower().replace("_", " ").strip()
-
-        for name in names:
-            if name.lower() in cl:
-                return c
-
-    return None
-
-
-def prepare_sales_data(df):
-
-    df = df.copy()
-
-    date_col = find_column(
-        df,
-        ["date", "order date", "sales date", "transaction date"]
-    )
-
-    product_col = find_column(
-        df,
-        ["product id", "product_id", "product"]
-    )
-
-    product_name_col = find_column(
-        df,
-        ["product name", "product_name", "name"]
-    )
-
-    category_col = find_column(
-        df,
-        ["category", "product category"]
-    )
-
-    sales_col = find_column(
-        df,
-        ["sales", "units sold", "quantity", "qty", "demand"]
-    )
-
-    if date_col is None:
-        raise ValueError(
-            "CSV must contain a Date column."
-        )
-
-    if product_col is None:
-        raise ValueError(
-            "CSV must contain a Product ID column."
-        )
-
-    if sales_col is None:
-        raise ValueError(
-            "CSV must contain Sales / Units Sold / Quantity column."
-        )
-
-    df["__date"] = pd.to_datetime(
-        df[date_col],
-        errors="coerce"
-    )
-
-    df["__product"] = df[product_col].astype(str)
-
-    df["__sales"] = pd.to_numeric(
-        df[sales_col],
-        errors="coerce"
-    ).fillna(0)
-
-    if product_name_col:
-        df["__product_name"] = (
-            df[product_name_col].astype(str)
-        )
-    else:
-        df["__product_name"] = df["__product"]
-
-    if category_col:
-        df["__category"] = (
-            df[category_col].astype(str)
-        )
-    else:
-        df["__category"] = "Other"
-
-    df = df.dropna(subset=["__date"])
-
-    return df
-
-
-def train_forecast_model(df, trees=200):
-
-    daily = (
-        df.groupby("__date")["__sales"]
-        .sum()
-        .reset_index()
-    )
-
-    daily = daily.sort_values("__date")
-
-    if len(daily) < 15:
-        return None, pd.DataFrame(), None
-
-    daily["lag1"] = daily["__sales"].shift(1)
-    daily["lag7"] = daily["__sales"].shift(7)
-    daily["rolling7"] = (
-        daily["__sales"]
-        .shift(1)
-        .rolling(7)
-        .mean()
-    )
-
-    daily["day"] = daily["__date"].dt.day
-    daily["month"] = daily["__date"].dt.month
-    daily["weekday"] = daily["__date"].dt.weekday
-
-    daily = daily.dropna()
-
-    if len(daily) < 10:
-        return None, pd.DataFrame(), None
-
-    features = [
-        "lag1",
-        "lag7",
-        "rolling7",
-        "day",
-        "month",
-        "weekday"
-    ]
-
-    X = daily[features]
-    y = daily["__sales"]
-
-    split = int(len(daily) * 0.8)
-
-    X_train = X.iloc[:split]
-    X_test = X.iloc[split:]
-
-    y_train = y.iloc[:split]
-    y_test = y.iloc[split:]
-
-    model = RandomForestRegressor(
-        n_estimators=trees,
-        random_state=42,
-        n_jobs=-1
-    )
-
-    model.fit(X_train, y_train)
-
-    pred = model.predict(X_test)
-
-    mae = mean_absolute_error(y_test, pred)
-
-    rmse = np.sqrt(
-        mean_squared_error(y_test, pred)
-    )
-
-    r2 = r2_score(y_test, pred)
-
-    metrics = {
-        "MAE": mae,
-        "RMSE": rmse,
-        "R2": r2
-    }
-
-    test_df = pd.DataFrame({
-        "Date": daily["__date"].iloc[split:],
-        "Actual": y_test.values,
-        "Predicted": pred
-    })
-
-    return model, test_df, metrics
-
-
-def calculate_product_forecast(df):
-
-    result = []
-
-    for product in df["__product"].unique():
-
-        p = df[df["__product"] == product].copy()
-
-        total_sales = p["__sales"].sum()
-
-        days = max(
-            (p["__date"].max() - p["__date"].min()).days + 1,
-            1
-        )
-
-        daily_demand = total_sales / days
-
-        forecast_30 = daily_demand * 30
-
-        row = p.iloc[-1]
-
-        result.append({
-            "Product ID": product,
-            "Product Name": row["__product_name"],
-            "Category": row["__category"],
-            "Forecast Demand (30 Days)": round(
-                forecast_30
-            )
-        })
-
-    return pd.DataFrame(result)
-
-
-# =========================================================
-# SIDEBAR
-# =========================================================
+REQUIRED = [
+    "Date","Store ID","Product ID","Category","Region",
+    "Inventory Level","Units Sold","Units Ordered","Demand Forecast",
+    "Price","Discount","Weather Condition","Holiday/Promotion",
+    "Competitor Pricing","Seasonality"
+]
+
+st.title("📦 Retail Inventory Intelligence")
+st.caption("Demand Forecasting • Manual Inventory Management • Reorder Planning")
 
 with st.sidebar:
-
-    st.markdown("""
-    <div style="font-size:24px;font-weight:800;">
-    📦 Retail Inventory<br>Intelligence
-    </div>
-    """, unsafe_allow_html=True)
-
-    st.markdown(
-        "Demand Forecasting • Inventory Management • Reorder Planning"
-    )
-
-    st.divider()
-
-    st.markdown("### DATA & SETTINGS")
-
-    uploaded_file = st.file_uploader(
-        "Upload Sales CSV",
+    st.header("Data")
+    uploaded = st.file_uploader(
+        "Upload sales/inventory CSV",
         type=["csv"]
     )
-
-    if uploaded_file is not None:
-
-        try:
-
-            raw = pd.read_csv(uploaded_file)
-
-            sales = prepare_sales_data(raw)
-
-            st.session_state.sales_df = sales
-
-            st.success(
-                f"CSV loaded: {len(raw):,} records"
-            )
-
-        except Exception as e:
-
-            st.error(str(e))
-
     st.divider()
-
-    st.markdown("### MODEL SETTINGS")
-
-    trees = st.selectbox(
-        "Number of Trees",
-        [50, 100, 200, 300, 500],
-        index=2
+    st.write("**Model:** Random Forest")
+    st.write("**Trees:** 200")
+    st.write("**Safety Stock:** 15%")
+    st.divider()
+    st.info(
+        "Inventory values can now be entered manually inside the "
+        "Inventory Manager. The CSV is used mainly for historical demand."
     )
 
-    safety_stock = st.number_input(
-        "Safety Stock (%)",
-        min_value=0,
-        max_value=100,
-        value=15
+if uploaded is None:
+    st.warning("Upload the retail CSV to start.")
+    st.stop()
+
+try:
+    df = pd.read_csv(uploaded)
+except Exception as e:
+    st.error(f"Could not read the CSV: {e}")
+    st.stop()
+
+missing = [c for c in REQUIRED if c not in df.columns]
+if missing:
+    st.error("The CSV is missing these columns:")
+    st.write(missing)
+    st.stop()
+
+df["Date"] = pd.to_datetime(df["Date"], errors="coerce")
+
+numeric_cols = [
+    "Inventory Level","Units Sold","Units Ordered","Demand Forecast",
+    "Price","Discount","Holiday/Promotion","Competitor Pricing"
+]
+
+for col in numeric_cols:
+    df[col] = pd.to_numeric(df[col], errors="coerce")
+
+df = df.dropna(
+    subset=["Date","Store ID","Product ID","Units Sold"]
+).copy()
+
+df = df.sort_values(["Store ID","Product ID","Date"])
+
+if "inventory_master" not in st.session_state:
+    master = (
+        df.sort_values("Date")
+        .groupby(["Store ID","Product ID"], as_index=False)
+        .tail(1)
+        .copy()
     )
 
-    if st.button(
-        "▶ Train / Refresh Model",
-        width="stretch"
-    ):
+    inventory_master = master[
+        ["Store ID","Product ID","Category","Region"]
+    ].copy()
 
-        if st.session_state.sales_df is None:
+    inventory_master["Current Stock"] = master["Inventory Level"].fillna(0).astype(float)
+    inventory_master["Unit Cost"] = master["Price"].fillna(0).astype(float)
+    inventory_master["Lead Time Days"] = 7
+    inventory_master["Supplier"] = "Supplier A"
+    inventory_master["Reorder Level"] = np.maximum(
+        master["Demand Forecast"].fillna(0).astype(float), 0
+    )
 
-            st.warning(
-                "Upload the CSV first."
-            )
+    st.session_state.inventory_master = inventory_master
 
-        else:
+inventory_master = st.session_state.inventory_master.copy()
 
-            try:
+df["Year"] = df["Date"].dt.year
+df["Month"] = df["Date"].dt.month
+df["DayOfWeek"] = df["Date"].dt.dayofweek
 
-                model, test_df, metrics = train_forecast_model(
-                    st.session_state.sales_df,
-                    trees
-                )
-
-                st.session_state.model = model
-                st.session_state.test_df = test_df
-                st.session_state.metrics = metrics
-
-                st.session_state.forecast_df = (
-                    calculate_product_forecast(
-                        st.session_state.sales_df
-                    )
-                )
-
-                st.success(
-                    "Model trained successfully."
-                )
-
-            except Exception as e:
-
-                st.error(
-                    f"Model error: {e}"
-                )
-
-    st.divider()
-
-    st.markdown("### DATA SUMMARY")
-
-    if st.session_state.sales_df is not None:
-
-        d = st.session_state.sales_df
-
-        st.write(
-            f"**Records:** {len(d):,}"
-        )
-
-        st.write(
-            f"**Products:** {d['__product'].nunique()}"
-        )
-
-        st.write(
-            f"**Categories:** {d['__category'].nunique()}"
-        )
-
-        st.write(
-            f"**Date Range:** "
-            f"{d['__date'].min().date()} → "
-            f"{d['__date'].max().date()}"
-        )
-
-    else:
-
-        st.caption(
-            "Upload a sales CSV to begin."
-        )
-
-
-# =========================================================
-# HEADER
-# =========================================================
-
-st.markdown(
-    '<div class="main-title">📦 Retail Inventory Intelligence</div>',
-    unsafe_allow_html=True
+df["Lag_1"] = (
+    df.groupby(["Store ID","Product ID"])["Units Sold"]
+    .shift(1)
 )
 
-st.markdown(
-    '<div class="subtitle">'
-    'Demand Forecasting • Manual Inventory Management • Reorder Planning'
-    '</div>',
-    unsafe_allow_html=True
+df["Lag_7"] = (
+    df.groupby(["Store ID","Product ID"])["Units Sold"]
+    .shift(7)
 )
 
-st.write("")
+df["Rolling_7"] = (
+    df.groupby(["Store ID","Product ID"])["Units Sold"]
+    .transform(
+        lambda x: x.shift(1).rolling(7, min_periods=3).mean()
+    )
+)
 
+df["Rolling_30"] = (
+    df.groupby(["Store ID","Product ID"])["Units Sold"]
+    .transform(
+        lambda x: x.shift(1).rolling(30, min_periods=7).mean()
+    )
+)
 
-# =========================================================
-# NAVIGATION
-# =========================================================
+model_df = df.dropna(
+    subset=["Lag_1","Lag_7","Rolling_7","Rolling_30"]
+).copy()
+
+categorical = [
+    "Category",
+    "Region",
+    "Weather Condition",
+    "Seasonality"
+]
+
+model_df = pd.get_dummies(
+    model_df,
+    columns=categorical,
+    drop_first=True
+)
+
+base_features = [
+    "Inventory Level",
+    "Units Ordered",
+    "Demand Forecast",
+    "Price",
+    "Discount",
+    "Holiday/Promotion",
+    "Competitor Pricing",
+    "Year",
+    "Month",
+    "DayOfWeek",
+    "Lag_1",
+    "Lag_7",
+    "Rolling_7",
+    "Rolling_30"
+]
+
+dummy_features = [
+    c for c in model_df.columns
+    if any(c.startswith(x + "_") for x in categorical)
+]
+
+features = base_features + dummy_features
+
+model_df = model_df.dropna(
+    subset=features + ["Units Sold"]
+)
+
+if len(model_df) < 20:
+    st.error("Not enough valid historical records to train the model.")
+    st.stop()
+
+dates = sorted(
+    model_df["Date"].dt.normalize().unique()
+)
+
+split_index = max(1, int(len(dates) * 0.8))
+
+if split_index >= len(dates):
+    split_index = len(dates) - 1
+
+split_date = dates[split_index]
+
+train = model_df[
+    model_df["Date"].dt.normalize() < split_date
+]
+
+test = model_df[
+    model_df["Date"].dt.normalize() >= split_date
+]
+
+if train.empty or test.empty:
+    st.error("Could not create the time-based train/test split.")
+    st.stop()
+
+model = RandomForestRegressor(
+    n_estimators=200,
+    random_state=42,
+    n_jobs=-1,
+    max_features="sqrt"
+)
+
+model.fit(
+    train[features],
+    train["Units Sold"]
+)
+
+pred = np.maximum(
+    model.predict(test[features]),
+    0
+)
+
+actual = test["Units Sold"].to_numpy()
+
+mae = mean_absolute_error(
+    actual,
+    pred
+)
+
+rmse = np.sqrt(
+    mean_squared_error(
+        actual,
+        pred
+    )
+)
+
+mask = actual != 0
+
+mape = (
+    np.mean(
+        np.abs(
+            (actual[mask] - pred[mask])
+            / actual[mask]
+        )
+    ) * 100
+    if mask.any()
+    else np.nan
+)
+
+latest_date = df["Date"].max()
 
 tabs = st.tabs([
-    "Dashboard",
-    "Manual Inventory",
-    "Inventory Planning",
-    "Forecast Model",
-    "Alerts",
-    "Analytics",
-    "12-Month Forecast"
+    "🏠 Dashboard",
+    "✏️ Manual Inventory",
+    "📦 Inventory Planning",
+    "🤖 Forecast Model",
+    "🚨 Alerts",
+    "📊 Analytics",
+    "🔮 12-Month Forecast"
 ])
 
-
-# =========================================================
-# DASHBOARD
-# =========================================================
-
 with tabs[0]:
+    st.header("Executive Dashboard")
 
-    st.markdown(
-        '<div class="section-title">Dashboard</div>',
-        unsafe_allow_html=True
+    c1,c2,c3,c4,c5 = st.columns(5)
+
+    c1.metric(
+        "Products",
+        f"{inventory_master['Product ID'].nunique():,}"
     )
 
-    if st.session_state.sales_df is None:
+    c2.metric(
+        "Current Stock",
+        f"{inventory_master['Current Stock'].sum():,.0f}"
+    )
 
-        st.info(
-            "Upload the sales CSV from the sidebar to display the dashboard."
-        )
+    c3.metric(
+        "Reorder Level",
+        f"{inventory_master['Reorder Level'].sum():,.0f}"
+    )
 
-    else:
+    c4.metric(
+        "MAE",
+        f"{mae:,.2f}"
+    )
 
-        df = st.session_state.sales_df
-
-        products = df["__product"].nunique()
-
-        stock = 0
-
-        if not st.session_state.inventory_df.empty:
-            stock = st.session_state.inventory_df[
-                "Current Stock"
-            ].sum()
-
-        reorder_count = 0
-
-        if (
-            not st.session_state.inventory_df.empty
-            and not st.session_state.forecast_df.empty
-        ):
-
-            temp = st.session_state.inventory_df.merge(
-                st.session_state.forecast_df[
-                    [
-                        "Product ID",
-                        "Forecast Demand (30 Days)"
-                    ]
-                ],
-                on="Product ID",
-                how="left"
-            )
-
-            temp["Forecast Demand (30 Days)"] = (
-                temp["Forecast Demand (30 Days)"]
-                .fillna(0)
-            )
-
-            temp["Safety Stock"] = (
-                temp["Forecast Demand (30 Days)"]
-                * safety_stock / 100
-            )
-
-            temp["Reorder Level"] = (
-                temp["Forecast Demand (30 Days)"] / 30 * 7
-                + temp["Safety Stock"]
-            )
-
-            reorder_count = (
-                temp["Current Stock"]
-                < temp["Reorder Level"]
-            ).sum()
-
-        c1, c2, c3, c4, c5 = st.columns(5)
-
-        with c1:
-            st.markdown(
-                f"""
-                <div class="card">
-                <div class="card-title">Total Products</div>
-                <div class="card-value">{products}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c2:
-            st.markdown(
-                f"""
-                <div class="card">
-                <div class="card-title">Manual Current Stock</div>
-                <div class="card-value">{stock:,.0f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c3:
-            st.markdown(
-                f"""
-                <div class="card">
-                <div class="card-title">Reorder Products</div>
-                <div class="card-value">{reorder_count}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c4:
-
-            mae = 0
-
-            if "metrics" in st.session_state:
-                mae = st.session_state.metrics["MAE"]
-
-            st.markdown(
-                f"""
-                <div class="card">
-                <div class="card-title">MAE</div>
-                <div class="card-value">{mae:.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        with c5:
-
-            rmse = 0
-
-            if "metrics" in st.session_state:
-                rmse = st.session_state.metrics["RMSE"]
-
-            st.markdown(
-                f"""
-                <div class="card">
-                <div class="card-title">RMSE</div>
-                <div class="card-value">{rmse:.2f}</div>
-                </div>
-                """,
-                unsafe_allow_html=True
-            )
-
-        st.divider()
-
-        if "test_df" in st.session_state:
-
-            chart = st.session_state.test_df
-
-            fig, ax = plt.subplots()
-
-            fig.patch.set_facecolor("black")
-            ax.set_facecolor("black")
-
-            ax.plot(
-                chart["Date"],
-                chart["Actual"],
-                label="Actual Demand"
-            )
-
-            ax.plot(
-                chart["Date"],
-                chart["Predicted"],
-                label="Predicted Demand"
-            )
-
-            ax.tick_params(colors="white")
-
-            for spine in ax.spines.values():
-                spine.set_color("#444444")
-
-            ax.set_title(
-                "Actual vs Predicted Demand",
-                color="white"
-            )
-
-            ax.set_ylabel(
-                "Units Sold",
-                color="white"
-            )
-
-            ax.legend()
-
-            st.pyplot(
-                fig,
-                width="stretch"
-            )
-
-        else:
-
-            st.info(
-                "Click Train / Refresh Model to generate demand predictions."
-            )
-
-
-# =========================================================
-# MANUAL INVENTORY
-# =========================================================
-
-with tabs[1]:
-
-    st.markdown(
-        '<div class="section-title">✏️ Manual Inventory</div>',
-        unsafe_allow_html=True
+    c5.metric(
+        "MAPE",
+        f"{mape:.2f}%" if np.isfinite(mape) else "N/A"
     )
 
     st.info(
-        "This section is completely separate from the CSV. "
-        "Enter your CURRENT inventory here. The CSV is used only for demand forecasting."
+        f"Historical data loaded through {latest_date:%d %b %Y}. "
+        "Inventory values shown here come from your manual inventory table."
     )
 
-    if st.session_state.sales_df is None:
+    status_df = inventory_master.copy()
 
-        st.warning(
-            "Upload the sales CSV first so products can be loaded into the inventory list."
+    status_df["Safety Stock"] = (
+        status_df["Reorder Level"] * 0.15
+    )
+
+    status_df["Target Stock"] = (
+        status_df["Reorder Level"]
+        + status_df["Safety Stock"]
+    )
+
+    status_df["Order Qty"] = np.maximum(
+        np.ceil(
+            status_df["Target Stock"]
+            - status_df["Current Stock"]
+        ),
+        0
+    )
+
+    status_df["Status"] = np.select(
+        [
+            status_df["Current Stock"] <= 0,
+            status_df["Current Stock"] < status_df["Reorder Level"],
+            status_df["Current Stock"] >
+            status_df["Target Stock"] * 1.5
+        ],
+        [
+            "Stockout",
+            "Reorder",
+            "Overstock"
+        ],
+        default="Healthy"
+    )
+
+    a,b,c,d = st.columns(4)
+
+    a.metric(
+        "🔴 Stockout",
+        f"{(status_df['Status']=='Stockout').sum():,}"
+    )
+
+    b.metric(
+        "🟠 Reorder",
+        f"{(status_df['Status']=='Reorder').sum():,}"
+    )
+
+    c.metric(
+        "🔵 Overstock",
+        f"{(status_df['Status']=='Overstock').sum():,}"
+    )
+
+    d.metric(
+        "🟢 Healthy",
+        f"{(status_df['Status']=='Healthy').sum():,}"
+    )
+
+with tabs[1]:
+    st.header("✏️ Manual Inventory Manager")
+
+    st.write(
+        "This is the manual inventory feature we discussed. "
+        "You can directly enter or edit the operational inventory information."
+    )
+
+    st.subheader("Inventory Master")
+
+    edited = st.data_editor(
+        inventory_master,
+        width="stretch",
+        hide_index=True,
+        num_rows="dynamic",
+        column_config={
+            "Store ID": st.column_config.TextColumn(
+                "Store ID",
+                disabled=True
+            ),
+            "Product ID": st.column_config.TextColumn(
+                "Product ID",
+                disabled=True
+            ),
+            "Category": st.column_config.TextColumn(
+                "Category",
+                disabled=True
+            ),
+            "Region": st.column_config.TextColumn(
+                "Region",
+                disabled=True
+            ),
+            "Current Stock": st.column_config.NumberColumn(
+                "Current Stock",
+                min_value=0,
+                step=1
+            ),
+            "Unit Cost": st.column_config.NumberColumn(
+                "Unit Cost",
+                min_value=0,
+                step=0.01
+            ),
+            "Lead Time Days": st.column_config.NumberColumn(
+                "Lead Time Days",
+                min_value=0,
+                step=1
+            ),
+            "Supplier": st.column_config.TextColumn(
+                "Supplier"
+            ),
+            "Reorder Level": st.column_config.NumberColumn(
+                "Reorder Level",
+                min_value=0,
+                step=1
+            )
+        }
+    )
+
+    if st.button(
+        "💾 Save Inventory Changes",
+        type="primary"
+    ):
+        edited["Current Stock"] = pd.to_numeric(
+            edited["Current Stock"],
+            errors="coerce"
+        ).fillna(0)
+
+        edited["Unit Cost"] = pd.to_numeric(
+            edited["Unit Cost"],
+            errors="coerce"
+        ).fillna(0)
+
+        edited["Lead Time Days"] = pd.to_numeric(
+            edited["Lead Time Days"],
+            errors="coerce"
+        ).fillna(0)
+
+        edited["Reorder Level"] = pd.to_numeric(
+            edited["Reorder Level"],
+            errors="coerce"
+        ).fillna(0)
+
+        edited["Supplier"] = (
+            edited["Supplier"]
+            .fillna("Supplier A")
+            .astype(str)
         )
 
-    else:
+        st.session_state.inventory_master = edited.copy()
+        st.success("Inventory information saved for this session.")
+        st.rerun()
 
-        sales = st.session_state.sales_df
+    st.divider()
 
-        products_df = (
-            sales[
+    st.subheader("➕ Add Manual Product")
+
+    c1,c2,c3 = st.columns(3)
+
+    with c1:
+        new_store = st.text_input(
+            "Store ID",
+            value=""
+        )
+
+        new_product = st.text_input(
+            "Product ID",
+            value=""
+        )
+
+    with c2:
+        new_category = st.text_input(
+            "Category",
+            value="General"
+        )
+
+        new_region = st.text_input(
+            "Region",
+            value="General"
+        )
+
+    with c3:
+        new_stock = st.number_input(
+            "Current Stock",
+            min_value=0.0,
+            value=0.0
+        )
+
+        new_cost = st.number_input(
+            "Unit Cost",
+            min_value=0.0,
+            value=0.0
+        )
+
+    c4,c5,c6 = st.columns(3)
+
+    with c4:
+        new_lead = st.number_input(
+            "Lead Time Days",
+            min_value=0,
+            value=7
+        )
+
+    with c5:
+        new_supplier = st.text_input(
+            "Supplier",
+            value="Supplier A"
+        )
+
+    with c6:
+        new_reorder = st.number_input(
+            "Reorder Level",
+            min_value=0.0,
+            value=0.0
+        )
+
+    if st.button(
+        "➕ Add Product"
+    ):
+        if not new_store or not new_product:
+            st.error("Enter both Store ID and Product ID.")
+        else:
+            new_row = pd.DataFrame([{
+                "Store ID": new_store,
+                "Product ID": new_product,
+                "Category": new_category,
+                "Region": new_region,
+                "Current Stock": new_stock,
+                "Unit Cost": new_cost,
+                "Lead Time Days": new_lead,
+                "Supplier": new_supplier,
+                "Reorder Level": new_reorder
+            }])
+
+            st.session_state.inventory_master = pd.concat(
                 [
-                    "__product",
-                    "__product_name",
-                    "__category"
-                ]
-            ]
-            .drop_duplicates("__product")
-            .rename(
-                columns={
-                    "__product": "Product ID",
-                    "__product_name": "Product Name",
-                    "__category": "Category"
-                }
-            )
-        )
-
-        # Create initial inventory table
-        if st.session_state.inventory_df.empty:
-
-            inv = products_df.copy()
-
-            inv["Current Stock"] = 0
-            inv["Unit Price"] = 0.0
-            inv["Reorder Level"] = 0
-            inv["Lead Time (Days)"] = 7
-
-            st.session_state.inventory_df = inv
-
-        st.markdown("### Enter / Update Current Inventory")
-
-        edited = st.data_editor(
-            st.session_state.inventory_df,
-            width="stretch",
-            hide_index=True,
-            num_rows="dynamic",
-            column_config={
-                "Product ID": st.column_config.TextColumn(
-                    disabled=True
-                ),
-                "Product Name": st.column_config.TextColumn(
-                    disabled=True
-                ),
-                "Category": st.column_config.TextColumn(
-                    disabled=True
-                ),
-                "Current Stock": st.column_config.NumberColumn(
-                    min_value=0,
-                    step=1
-                ),
-                "Unit Price": st.column_config.NumberColumn(
-                    min_value=0,
-                    step=1
-                ),
-                "Reorder Level": st.column_config.NumberColumn(
-                    min_value=0,
-                    step=1
-                ),
-                "Lead Time (Days)": st.column_config.NumberColumn(
-                    min_value=0,
-                    step=1
-                )
-            },
-            key="inventory_editor"
-        )
-
-        if st.button(
-            "💾 Save Inventory",
-            width="stretch"
-        ):
-
-            st.session_state.inventory_df = edited.copy()
-
-            st.success(
-                "Manual inventory saved successfully."
+                    st.session_state.inventory_master,
+                    new_row
+                ],
+                ignore_index=True
             )
 
+            st.success("Product added.")
             st.rerun()
 
-        st.download_button(
-            "⬇ Download Manual Inventory",
-            data=st.session_state.inventory_df.to_csv(
-                index=False
-            ),
-            file_name="manual_inventory.csv",
-            mime="text/csv",
-            width="stretch"
-        )
+    st.divider()
 
+    st.subheader("💾 Save Inventory as CSV")
 
-# =========================================================
-# INVENTORY PLANNING
-# =========================================================
+    st.download_button(
+        "⬇ Download Manual Inventory Master",
+        st.session_state.inventory_master.to_csv(
+            index=False
+        ).encode("utf-8"),
+        "inventory_master.csv",
+        "text/csv"
+    )
 
 with tabs[2]:
+    st.header("📦 Inventory Planning")
 
-    st.markdown(
-        '<div class="section-title">📦 Inventory Planning</div>',
-        unsafe_allow_html=True
+    plan = inventory_master.copy()
+
+    plan["Safety Stock"] = (
+        plan["Reorder Level"] * 0.15
     )
 
-    if st.session_state.inventory_df.empty:
+    plan["Target Stock"] = (
+        plan["Reorder Level"]
+        + plan["Safety Stock"]
+    )
 
-        st.info(
-            "Enter your inventory in the Manual Inventory tab first."
-        )
-
-    elif st.session_state.forecast_df.empty:
-
-        st.warning(
-            "Train the model first to generate demand forecasts."
-        )
-
-    else:
-
-        inv = st.session_state.inventory_df.copy()
-
-        forecast = st.session_state.forecast_df.copy()
-
-        plan = inv.merge(
-            forecast,
-            on="Product ID",
-            how="left"
-        )
-
-        plan[
-            "Forecast Demand (30 Days)"
-        ] = plan[
-            "Forecast Demand (30 Days)"
-        ].fillna(0)
-
-        plan["Daily Demand"] = (
-            plan["Forecast Demand (30 Days)"] / 30
-        )
-
-        plan["Safety Stock"] = (
-            plan["Forecast Demand (30 Days)"]
-            * safety_stock / 100
-        )
-
-        plan["Calculated Reorder Level"] = (
-            plan["Daily Demand"]
-            * plan["Lead Time (Days)"]
-            + plan["Safety Stock"]
-        )
-
-        plan["Target Stock"] = (
-            plan["Forecast Demand (30 Days)"]
-            + plan["Safety Stock"]
-        )
-
-        plan["Order Qty"] = (
+    plan["Order Quantity"] = np.maximum(
+        np.ceil(
             plan["Target Stock"]
             - plan["Current Stock"]
-        ).clip(lower=0)
+        ),
+        0
+    )
 
-        def get_status(row):
+    plan["Inventory Value"] = (
+        plan["Current Stock"]
+        * plan["Unit Cost"]
+    )
 
-            stock = row["Current Stock"]
-            forecast_demand = row["Forecast Demand (30 Days)"]
-            target = row["Target Stock"]
-            reorder = row["Calculated Reorder Level"]
+    plan["Status"] = np.select(
+        [
+            plan["Current Stock"] <= 0,
+            plan["Current Stock"] < plan["Reorder Level"],
+            plan["Current Stock"] > plan["Target Stock"] * 1.5
+        ],
+        [
+            "Stockout",
+            "Reorder",
+            "Overstock"
+        ],
+        default="Healthy"
+    )
 
-            if stock <= 0:
-                return "STOCKOUT"
+    c1,c2,c3,c4 = st.columns(4)
 
-            if stock < reorder:
-                return "REORDER"
+    c1.metric(
+        "Inventory Value",
+        f"{plan['Inventory Value'].sum():,.2f}"
+    )
 
-            if stock > target * 1.5:
-                return "OVERSTOCK"
+    c2.metric(
+        "Safety Stock",
+        f"{plan['Safety Stock'].sum():,.0f}"
+    )
 
-            return "HEALTHY"
+    c3.metric(
+        "Order Quantity",
+        f"{plan['Order Quantity'].sum():,.0f}"
+    )
 
-        plan["Status"] = plan.apply(
-            get_status,
-            axis=1
-        )
+    c4.metric(
+        "Lead Time Avg.",
+        f"{plan['Lead Time Days'].mean():.1f} days"
+    )
 
-        plan["Inventory Value"] = (
-            plan["Current Stock"]
-            * plan["Unit Price"]
-        )
+    st.dataframe(
+        plan,
+        width="stretch",
+        hide_index=True
+    )
 
-        display_cols = [
-            "Product ID",
-            "Product Name",
-            "Category",
-            "Current Stock",
-            "Forecast Demand (30 Days)",
-            "Safety Stock",
-            "Calculated Reorder Level",
-            "Target Stock",
-            "Order Qty",
-            "Status",
-            "Inventory Value"
-        ]
-
-        st.dataframe(
-            plan[display_cols],
-            width="stretch",
-            hide_index=True
-        )
-
-        st.download_button(
-            "⬇ Download Inventory Plan",
-            data=plan[display_cols].to_csv(
-                index=False
-            ),
-            file_name="inventory_plan.csv",
-            mime="text/csv",
-            width="stretch"
-        )
-
-
-# =========================================================
-# FORECAST MODEL
-# =========================================================
+    st.download_button(
+        "⬇ Download Inventory Plan",
+        plan.to_csv(index=False).encode("utf-8"),
+        "inventory_plan.csv",
+        "text/csv"
+    )
 
 with tabs[3]:
+    st.header("🤖 Forecast Model")
 
-    st.markdown(
-        '<div class="section-title">🔮 Forecast Model</div>',
-        unsafe_allow_html=True
+    c1,c2,c3 = st.columns(3)
+
+    c1.metric("MAE", f"{mae:,.2f}")
+    c2.metric("RMSE", f"{rmse:,.2f}")
+    c3.metric(
+        "MAPE",
+        f"{mape:.2f}%" if np.isfinite(mape) else "N/A"
     )
 
-    if "metrics" not in st.session_state:
+    st.write(
+        "The model predicts future Units Sold using historical demand, "
+        "lag values, rolling demand, pricing, promotion and seasonality."
+    )
 
-        st.info(
-            "Train the model from the sidebar."
-        )
+    n = min(500, len(test))
 
+    fig, ax = plt.subplots(figsize=(12,5))
+
+    ax.plot(
+        test["Date"].iloc[:n],
+        actual[:n],
+        label="Actual"
+    )
+
+    ax.plot(
+        test["Date"].iloc[:n],
+        pred[:n],
+        label="Predicted",
+        linestyle="--"
+    )
+
+    ax.set_title("Actual vs Predicted Demand")
+    ax.set_xlabel("Date")
+    ax.set_ylabel("Units Sold")
+    ax.legend()
+    ax.grid(axis="y", alpha=0.25)
+
+    st.pyplot(
+        fig,
+        width="stretch"
+    )
+
+    plt.close(fig)
+
+    importance = pd.DataFrame({
+        "Feature": features,
+        "Importance": model.feature_importances_
+    }).sort_values(
+        "Importance",
+        ascending=False
+    ).head(15)
+
+    fig, ax = plt.subplots(figsize=(10,5))
+
+    ax.barh(
+        importance["Feature"],
+        importance["Importance"]
+    )
+
+    ax.invert_yaxis()
+    ax.set_title("Top Feature Importance")
+    ax.set_xlabel("Importance")
+    ax.grid(axis="x", alpha=0.25)
+
+    st.pyplot(
+        fig,
+        width="stretch"
+    )
+
+    plt.close(fig)
+
+with tabs[4]:
+    st.header("🚨 Inventory Alerts")
+
+    plan = inventory_master.copy()
+
+    plan["Safety Stock"] = (
+        plan["Reorder Level"] * 0.15
+    )
+
+    plan["Target Stock"] = (
+        plan["Reorder Level"]
+        + plan["Safety Stock"]
+    )
+
+    plan["Order Quantity"] = np.maximum(
+        np.ceil(
+            plan["Target Stock"]
+            - plan["Current Stock"]
+        ),
+        0
+    )
+
+    plan["Status"] = np.select(
+        [
+            plan["Current Stock"] <= 0,
+            plan["Current Stock"] < plan["Reorder Level"],
+            plan["Current Stock"] > plan["Target Stock"] * 1.5
+        ],
+        [
+            "Stockout",
+            "Reorder",
+            "Overstock"
+        ],
+        default="Healthy"
+    )
+
+    a,b,c = st.columns(3)
+
+    a.metric(
+        "🔴 Stockout",
+        int((plan["Status"] == "Stockout").sum())
+    )
+
+    b.metric(
+        "🟠 Reorder",
+        int((plan["Status"] == "Reorder").sum())
+    )
+
+    c.metric(
+        "🔵 Overstock",
+        int((plan["Status"] == "Overstock").sum())
+    )
+
+    alerts = plan[
+        plan["Status"] != "Healthy"
+    ]
+
+    if alerts.empty:
+        st.success("No inventory alerts.")
     else:
-
-        metrics = st.session_state.metrics
-
-        a, b, c = st.columns(3)
-
-        with a:
-            st.metric(
-                "MAE",
-                f"{metrics['MAE']:.2f}"
-            )
-
-        with b:
-            st.metric(
-                "RMSE",
-                f"{metrics['RMSE']:.2f}"
-            )
-
-        with c:
-            st.metric(
-                "R²",
-                f"{metrics['R2']:.3f}"
-            )
-
         st.dataframe(
-            st.session_state.test_df,
+            alerts,
             width="stretch",
             hide_index=True
         )
 
-
-# =========================================================
-# ALERTS
-# =========================================================
-
-with tabs[4]:
-
-    st.markdown(
-        '<div class="section-title">🚨 Inventory Alerts</div>',
-        unsafe_allow_html=True
-    )
-
-    if st.session_state.inventory_df.empty:
-
-        st.info(
-            "No manual inventory entered."
-        )
-
-    elif st.session_state.forecast_df.empty:
-
-        st.info(
-            "Train the forecasting model first."
-        )
-
-    else:
-
-        inv = st.session_state.inventory_df.copy()
-
-        fc = st.session_state.forecast_df.copy()
-
-        alerts = inv.merge(
-            fc,
-            on="Product ID",
-            how="left"
-        )
-
-        alerts[
-            "Forecast Demand (30 Days)"
-        ] = alerts[
-            "Forecast Demand (30 Days)"
-        ].fillna(0)
-
-        alerts["Safety Stock"] = (
-            alerts["Forecast Demand (30 Days)"]
-            * safety_stock / 100
-        )
-
-        alerts["Reorder Level"] = (
-            alerts["Forecast Demand (30 Days)"] / 30
-            * alerts["Lead Time (Days)"]
-            + alerts["Safety Stock"]
-        )
-
-        alerts["Status"] = np.where(
-            alerts["Current Stock"] <= 0,
-            "STOCKOUT",
-            np.where(
-                alerts["Current Stock"]
-                < alerts["Reorder Level"],
-                "REORDER",
-                np.where(
-                    alerts["Current Stock"]
-                    > alerts["Forecast Demand (30 Days)"]
-                    * 1.5,
-                    "OVERSTOCK",
-                    "HEALTHY"
-                )
-            )
-        )
-
-        alert_df = alerts[
-            alerts["Status"] != "HEALTHY"
-        ]
-
-        if alert_df.empty:
-
-            st.success(
-                "No inventory alerts."
-            )
-
-        else:
-
-            st.dataframe(
-                alert_df[
-                    [
-                        "Product ID",
-                        "Product Name",
-                        "Current Stock",
-                        "Forecast Demand (30 Days)",
-                        "Reorder Level",
-                        "Status"
-                    ]
-                ],
-                width="stretch",
-                hide_index=True
-            )
-
-
-# =========================================================
-# ANALYTICS
-# =========================================================
-
 with tabs[5]:
+    st.header("📊 Retail Analytics")
 
-    st.markdown(
-        '<div class="section-title">📊 Analytics</div>',
-        unsafe_allow_html=True
-    )
+    c1,c2 = st.columns(2)
 
-    if st.session_state.sales_df is None:
-
-        st.info(
-            "Upload the CSV first."
-        )
-
-    else:
-
-        df = st.session_state.sales_df
-
-        category_sales = (
-            df.groupby("__category")["__sales"]
+    with c1:
+        category = (
+            df.groupby("Category")["Units Sold"]
             .sum()
             .sort_values(ascending=False)
         )
 
-        st.markdown("### Demand by Category")
+        fig, ax = plt.subplots(figsize=(8,4))
 
-        fig, ax = plt.subplots()
-
-        fig.patch.set_facecolor("black")
-        ax.set_facecolor("black")
-
-        category_sales.plot(
-            kind="bar",
-            ax=ax
+        ax.bar(
+            category.index,
+            category.values
         )
 
+        ax.set_title("Units Sold by Category")
         ax.tick_params(
             axis="x",
-            colors="white",
-            rotation=45
+            rotation=30
         )
-
-        ax.tick_params(
-            axis="y",
-            colors="white"
-        )
-
-        ax.set_ylabel(
-            "Units Sold",
-            color="white"
-        )
-
-        ax.set_xlabel(
-            "",
-            color="white"
-        )
-
-        ax.set_title(
-            "Demand by Category",
-            color="white"
-        )
+        ax.grid(axis="y", alpha=0.25)
 
         st.pyplot(
             fig,
             width="stretch"
         )
 
+        plt.close(fig)
 
-# =========================================================
-# 12 MONTH FORECAST
-# =========================================================
+    with c2:
+        region = (
+            df.groupby("Region")["Units Sold"]
+            .sum()
+            .sort_values(ascending=False)
+        )
 
-with tabs[6]:
+        fig, ax = plt.subplots(figsize=(8,4))
 
-    st.markdown(
-        '<div class="section-title">📅 12-Month Forecast</div>',
-        unsafe_allow_html=True
+        ax.bar(
+            region.index,
+            region.values
+        )
+
+        ax.set_title("Units Sold by Region")
+        ax.tick_params(
+            axis="x",
+            rotation=30
+        )
+        ax.grid(axis="y", alpha=0.25)
+
+        st.pyplot(
+            fig,
+            width="stretch"
+        )
+
+        plt.close(fig)
+
+    monthly = (
+        df.groupby(
+            df["Date"].dt.to_period("M")
+        )["Units Sold"]
+        .sum()
     )
 
-    if st.session_state.forecast_df.empty:
+    fig, ax = plt.subplots(figsize=(12,4))
 
-        st.info(
-            "Train the model first."
+    ax.plot(
+        monthly.index.astype(str),
+        monthly.values
+    )
+
+    ax.set_title("Historical Monthly Demand")
+    ax.tick_params(
+        axis="x",
+        rotation=45
+    )
+    ax.grid(axis="y", alpha=0.25)
+
+    st.pyplot(
+        fig,
+        width="stretch"
+    )
+
+    plt.close(fig)
+
+with tabs[6]:
+    st.header("🔮 12-Month Forecast")
+
+    st.caption(
+        "Recursive product/store demand projection using the trained Random Forest model."
+    )
+
+    latest_series = (
+        df.sort_values("Date")
+        .groupby(
+            ["Store ID","Product ID"],
+            as_index=False
+        )
+        .tail(30)
+    )
+
+    future_rows = []
+
+    for (store, product), group in latest_series.groupby(
+        ["Store ID","Product ID"]
+    ):
+        group = group.sort_values("Date")
+        history = group["Units Sold"].tolist()
+
+        if len(history) < 7:
+            continue
+
+        last = group.iloc[-1]
+
+        for step in range(1, 13):
+
+            next_date = (
+                latest_date
+                + pd.DateOffset(months=step)
+            )
+
+            row = {
+                "Inventory Level": float(
+                    last["Inventory Level"]
+                ),
+                "Units Ordered": float(
+                    last["Units Ordered"]
+                ),
+                "Demand Forecast": float(
+                    last["Demand Forecast"]
+                ),
+                "Price": float(
+                    last["Price"]
+                ),
+                "Discount": float(
+                    last["Discount"]
+                ),
+                "Holiday/Promotion": float(
+                    last["Holiday/Promotion"]
+                ),
+                "Competitor Pricing": float(
+                    last["Competitor Pricing"]
+                ),
+                "Year": next_date.year,
+                "Month": next_date.month,
+                "DayOfWeek": next_date.dayofweek,
+                "Lag_1": history[-1],
+                "Lag_7": history[-7],
+                "Rolling_7": np.mean(
+                    history[-7:]
+                ),
+                "Rolling_30": np.mean(
+                    history[-30:]
+                )
+            }
+
+            for feature in dummy_features:
+                row[feature] = 0
+
+            for prefix, column in [
+                ("Category","Category"),
+                ("Region","Region"),
+                ("Weather Condition","Weather Condition"),
+                ("Seasonality","Seasonality")
+            ]:
+
+                value = str(last[column])
+                key = f"{prefix}_{value}"
+
+                if key in row:
+                    row[key] = 1
+
+            future_X = pd.DataFrame(
+                [row]
+            ).reindex(
+                columns=features,
+                fill_value=0
+            )
+
+            forecast = max(
+                float(
+                    model.predict(
+                        future_X
+                    )[0]
+                ),
+                0
+            )
+
+            safety = forecast * 0.15
+
+            future_rows.append({
+                "Date": next_date,
+                "Month": next_date.strftime("%b %Y"),
+                "Store ID": store,
+                "Product ID": product,
+                "Category": last["Category"],
+                "Predicted Demand": forecast,
+                "Safety Stock": safety,
+                "Recommended Inventory": forecast + safety
+            })
+
+            history.append(forecast)
+
+    future = pd.DataFrame(
+        future_rows
+    )
+
+    if future.empty:
+
+        st.warning(
+            "Not enough product history for the 12-month forecast."
         )
 
     else:
 
-        base = st.session_state.forecast_df.copy()
-
-        monthly = []
-
-        for month in range(1, 13):
-
-            temp = base.copy()
-
-            temp["Month"] = month
-
-            temp["Forecast"] = (
-                temp["Forecast Demand (30 Days)"]
-                * (1 + 0.01 * (month - 1))
+        monthly_future = (
+            future.groupby(
+                ["Date","Month"],
+                as_index=False
             )
+            .agg(
+                {
+                    "Predicted Demand":"sum",
+                    "Safety Stock":"sum",
+                    "Recommended Inventory":"sum"
+                }
+            )
+            .sort_values("Date")
+        )
 
-            monthly.append(temp)
+        c1,c2,c3 = st.columns(3)
 
-        twelve = pd.concat(
-            monthly,
-            ignore_index=True
+        c1.metric(
+            "12-Month Demand",
+            f"{monthly_future['Predicted Demand'].sum():,.0f}"
+        )
+
+        c2.metric(
+            "12-Month Safety Stock",
+            f"{monthly_future['Safety Stock'].sum():,.0f}"
+        )
+
+        c3.metric(
+            "Recommended Inventory",
+            f"{monthly_future['Recommended Inventory'].sum():,.0f}"
         )
 
         st.dataframe(
-            twelve[
+            monthly_future[
                 [
                     "Month",
-                    "Product ID",
-                    "Product Name",
-                    "Category",
-                    "Forecast"
+                    "Predicted Demand",
+                    "Safety Stock",
+                    "Recommended Inventory"
                 ]
             ],
             width="stretch",
@@ -1236,10 +1119,49 @@ with tabs[6]:
 
         st.download_button(
             "⬇ Download 12-Month Forecast",
-            data=twelve.to_csv(
+            monthly_future.to_csv(
                 index=False
-            ),
-            file_name="12_month_forecast.csv",
-            mime="text/csv",
+            ).encode("utf-8"),
+            "12_month_forecast.csv",
+            "text/csv"
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(12,5)
+        )
+
+        ax.plot(
+            monthly_future["Month"],
+            monthly_future["Predicted Demand"],
+            marker="o"
+        )
+
+        ax.set_title(
+            "12-Month Forecasted Demand"
+        )
+
+        ax.set_xlabel("Month")
+        ax.set_ylabel("Predicted Units")
+
+        ax.tick_params(
+            axis="x",
+            rotation=35
+        )
+
+        ax.grid(
+            axis="y",
+            alpha=0.25
+        )
+
+        st.pyplot(
+            fig,
             width="stretch"
         )
+
+        plt.close(fig)
+
+st.divider()
+
+st.caption(
+    "Retail Inventory Intelligence • Random Forest • 200 Estimators • Manual Inventory Master"
+)
