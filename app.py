@@ -700,8 +700,19 @@ with tabs[2]:
         f"{plan['Lead Time Days'].mean():.1f} days"
     )
 
+    plan_display_cols = [
+        "Store ID", "Product ID", "Category", "Region",
+        "Current Stock", "Unit Cost", "Lead Time Days",
+        "Supplier", "Reorder Level", "Safety Stock",
+        "Target Stock", "Order Quantity", "Inventory Value", "Status"
+    ]
+    plan_display_cols = [
+        col for col in plan_display_cols
+        if col in plan.columns
+    ]
+
     st.dataframe(
-        plan,
+        plan[plan_display_cols],
         width="stretch",
         hide_index=True
     )
@@ -847,8 +858,18 @@ with tabs[4]:
     if alerts.empty:
         st.success("No inventory alerts.")
     else:
+        alert_display_cols = [
+            "Store ID", "Product ID", "Category", "Region",
+            "Current Stock", "Reorder Level", "Safety Stock",
+            "Target Stock", "Order Quantity", "Status"
+        ]
+        alert_display_cols = [
+            col for col in alert_display_cols
+            if col in alerts.columns
+        ]
+
         st.dataframe(
-            alerts,
+            alerts[alert_display_cols],
             width="stretch",
             hide_index=True
         )
@@ -949,145 +970,187 @@ with tabs[6]:
         "Recursive product/store demand projection using the trained Random Forest model."
     )
 
-    latest_series = (
-        df.sort_values("Date")
-        .groupby(
-            ["Store ID","Product ID"],
-            as_index=False
-        )
-        .tail(30)
+    # Build a stable 30-observation history for every Store + Product pair.
+    # This is intentionally done from the original cleaned dataframe so that
+    # the forecast does not depend on the training/test split.
+    group_histories = {}
+    skipped_groups = []
+
+    grouped = df.sort_values("Date").groupby(
+        ["Store ID", "Product ID"],
+        sort=False
     )
 
-    future_rows = []
-
-    for (store, product), group in latest_series.groupby(
-        ["Store ID","Product ID"]
-    ):
-        group = group.sort_values("Date")
-        history = group["Units Sold"].tolist()
+    for (store, product), group in grouped:
+        group = group.sort_values("Date").tail(30).copy()
+        history = pd.to_numeric(
+            group["Units Sold"],
+            errors="coerce"
+        ).dropna().tolist()
 
         if len(history) < 7:
+            skipped_groups.append((store, product))
             continue
 
-        last = group.iloc[-1]
+        group_histories[(store, product)] = group
+
+    future_rows = []
+    forecast_errors = []
+
+    # Forecast one step at a time and feed each prediction back into history.
+    for (store, product), group in group_histories.items():
+        group = group.sort_values("Date")
+        history = pd.to_numeric(
+            group["Units Sold"],
+            errors="coerce"
+        ).dropna().tolist()
+        last = group.iloc[-1].copy()
 
         for step in range(1, 13):
+            next_date = latest_date + pd.DateOffset(months=step)
 
-            next_date = (
-                latest_date
-                + pd.DateOffset(months=step)
-            )
+            try:
+                row = {
+                    "Inventory Level": float(
+                        pd.to_numeric(last["Inventory Level"], errors="coerce") or 0
+                    ),
+                    "Units Ordered": float(
+                        pd.to_numeric(last["Units Ordered"], errors="coerce") or 0
+                    ),
+                    "Demand Forecast": float(
+                        pd.to_numeric(last["Demand Forecast"], errors="coerce") or 0
+                    ),
+                    "Price": float(
+                        pd.to_numeric(last["Price"], errors="coerce") or 0
+                    ),
+                    "Discount": float(
+                        pd.to_numeric(last["Discount"], errors="coerce") or 0
+                    ),
+                    "Holiday/Promotion": float(
+                        pd.to_numeric(last["Holiday/Promotion"], errors="coerce") or 0
+                    ),
+                    "Competitor Pricing": float(
+                        pd.to_numeric(last["Competitor Pricing"], errors="coerce") or 0
+                    ),
+                    "Year": next_date.year,
+                    "Month": next_date.month,
+                    "DayOfWeek": next_date.dayofweek,
+                    "Lag_1": float(history[-1]),
+                    "Lag_7": float(history[-7]),
+                    "Rolling_7": float(np.mean(history[-7:])),
+                    "Rolling_30": float(np.mean(history[-30:]))
+                }
 
-            row = {
-                "Inventory Level": float(
-                    last["Inventory Level"]
-                ),
-                "Units Ordered": float(
-                    last["Units Ordered"]
-                ),
-                "Demand Forecast": float(
-                    last["Demand Forecast"]
-                ),
-                "Price": float(
-                    last["Price"]
-                ),
-                "Discount": float(
-                    last["Discount"]
-                ),
-                "Holiday/Promotion": float(
-                    last["Holiday/Promotion"]
-                ),
-                "Competitor Pricing": float(
-                    last["Competitor Pricing"]
-                ),
-                "Year": next_date.year,
-                "Month": next_date.month,
-                "DayOfWeek": next_date.dayofweek,
-                "Lag_1": history[-1],
-                "Lag_7": history[-7],
-                "Rolling_7": np.mean(
-                    history[-7:]
-                ),
-                "Rolling_30": np.mean(
-                    history[-30:]
+                # Initialize every encoded feature to zero.
+                for feature in dummy_features:
+                    row[feature] = 0
+
+                # Restore the categorical values from the latest known record.
+                for prefix, column in [
+                    ("Category", "Category"),
+                    ("Region", "Region"),
+                    ("Weather Condition", "Weather Condition"),
+                    ("Seasonality", "Seasonality")
+                ]:
+                    value = str(last[column])
+                    key = f"{prefix}_{value}"
+                    if key in row:
+                        row[key] = 1
+
+                # Guarantee the exact feature order expected by the model.
+                future_X = pd.DataFrame([row]).reindex(
+                    columns=features,
+                    fill_value=0
                 )
-            }
 
-            for feature in dummy_features:
-                row[feature] = 0
+                forecast = float(model.predict(future_X)[0])
+                forecast = max(forecast, 0.0)
 
-            for prefix, column in [
-                ("Category","Category"),
-                ("Region","Region"),
-                ("Weather Condition","Weather Condition"),
-                ("Seasonality","Seasonality")
-            ]:
+                safety = forecast * 0.15
 
-                value = str(last[column])
-                key = f"{prefix}_{value}"
+                future_rows.append({
+                    "Date": next_date,
+                    "Month": next_date.strftime("%b %Y"),
+                    "Store ID": store,
+                    "Product ID": product,
+                    "Category": last["Category"],
+                    "Predicted Demand": forecast,
+                    "Safety Stock": safety,
+                    "Recommended Inventory": forecast + safety
+                })
 
-                if key in row:
-                    row[key] = 1
+                # Feed the prediction into the next recursive step.
+                history.append(forecast)
 
-            future_X = pd.DataFrame(
-                [row]
-            ).reindex(
-                columns=features,
-                fill_value=0
-            )
+            except Exception as e:
+                forecast_errors.append(
+                    f"{store} / {product} / step {step}: {str(e)}"
+                )
+                break
 
-            forecast = max(
-                float(
-                    model.predict(
-                        future_X
-                    )[0]
-                ),
-                0
-            )
-
-            safety = forecast * 0.15
-
-            future_rows.append({
-                "Date": next_date,
-                "Month": next_date.strftime("%b %Y"),
-                "Store ID": store,
-                "Product ID": product,
-                "Category": last["Category"],
-                "Predicted Demand": forecast,
-                "Safety Stock": safety,
-                "Recommended Inventory": forecast + safety
-            })
-
-            history.append(forecast)
-
-    future = pd.DataFrame(
-        future_rows
-    )
+    future = pd.DataFrame(future_rows)
 
     if future.empty:
-
-        st.warning(
-            "Not enough product history for the 12-month forecast."
+        st.error(
+            "The 12-month forecast could not be generated. "
+            "Check that each Store/Product pair has at least 7 valid Units Sold records."
         )
 
-    else:
+        if skipped_groups:
+            st.info(
+                f"Skipped {len(skipped_groups)} Store/Product pairs because they "
+                "did not have enough historical demand records."
+            )
 
+        if forecast_errors:
+            st.warning(
+                "Forecast errors were encountered. The first error was: "
+                + forecast_errors[0]
+            )
+
+    else:
+        # Aggregate all Store/Product predictions into one monthly business forecast.
         monthly_future = (
             future.groupby(
-                ["Date","Month"],
+                ["Date", "Month"],
                 as_index=False
             )
-            .agg(
-                {
-                    "Predicted Demand":"sum",
-                    "Safety Stock":"sum",
-                    "Recommended Inventory":"sum"
-                }
-            )
+            .agg({
+                "Predicted Demand": "sum",
+                "Safety Stock": "sum",
+                "Recommended Inventory": "sum"
+            })
             .sort_values("Date")
         )
 
-        c1,c2,c3 = st.columns(3)
+        # Guarantee that all 12 forecast months are represented.
+        expected_dates = [
+            latest_date + pd.DateOffset(months=i)
+            for i in range(1, 13)
+        ]
+
+        expected = pd.DataFrame({
+            "Date": expected_dates,
+            "Month": [d.strftime("%b %Y") for d in expected_dates]
+        })
+
+        monthly_future = expected.merge(
+            monthly_future,
+            on=["Date", "Month"],
+            how="left"
+        )
+
+        for col in [
+            "Predicted Demand",
+            "Safety Stock",
+            "Recommended Inventory"
+        ]:
+            monthly_future[col] = (
+                pd.to_numeric(monthly_future[col], errors="coerce")
+                .fillna(0)
+            )
+
+        c1, c2, c3 = st.columns(3)
 
         c1.metric(
             "12-Month Demand",
@@ -1104,31 +1167,37 @@ with tabs[6]:
             f"{monthly_future['Recommended Inventory'].sum():,.0f}"
         )
 
+        st.success(
+            f"Generated {len(monthly_future)} forecast months for "
+            f"{len(group_histories)} Store/Product combinations."
+        )
+
+        # Use only columns that are guaranteed to exist to prevent KeyError.
+        forecast_display_cols = [
+            "Month",
+            "Predicted Demand",
+            "Safety Stock",
+            "Recommended Inventory"
+        ]
+        forecast_display_cols = [
+            col for col in forecast_display_cols
+            if col in monthly_future.columns
+        ]
+
         st.dataframe(
-            monthly_future[
-                [
-                    "Month",
-                    "Predicted Demand",
-                    "Safety Stock",
-                    "Recommended Inventory"
-                ]
-            ],
+            monthly_future[forecast_display_cols],
             width="stretch",
             hide_index=True
         )
 
         st.download_button(
             "⬇ Download 12-Month Forecast",
-            monthly_future.to_csv(
-                index=False
-            ).encode("utf-8"),
+            monthly_future.to_csv(index=False).encode("utf-8"),
             "12_month_forecast.csv",
             "text/csv"
         )
 
-        fig, ax = plt.subplots(
-            figsize=(12,5)
-        )
+        fig, ax = plt.subplots(figsize=(12, 5))
 
         ax.plot(
             monthly_future["Month"],
@@ -1136,29 +1205,27 @@ with tabs[6]:
             marker="o"
         )
 
-        ax.set_title(
-            "12-Month Forecasted Demand"
-        )
-
+        ax.set_title("12-Month Forecasted Demand")
         ax.set_xlabel("Month")
         ax.set_ylabel("Predicted Units")
+        ax.tick_params(axis="x", rotation=35)
+        ax.grid(axis="y", alpha=0.25)
 
-        ax.tick_params(
-            axis="x",
-            rotation=35
-        )
-
-        ax.grid(
-            axis="y",
-            alpha=0.25
-        )
-
-        st.pyplot(
-            fig,
-            width="stretch"
-        )
-
+        st.pyplot(fig, width="stretch")
         plt.close(fig)
+
+        # Optional diagnostics, kept out of the main UI unless something went wrong.
+        if skipped_groups:
+            st.info(
+                f"{len(skipped_groups)} Store/Product combinations were skipped "
+                "because they had fewer than 7 valid historical demand records."
+            )
+
+        if forecast_errors:
+            st.warning(
+                f"{len(forecast_errors)} forecast steps could not be generated. "
+                "The remaining valid forecasts are still shown above."
+            )
 
 st.divider()
 
